@@ -35,7 +35,8 @@ async function fillPullInfo(domainData, env) {
             if (!response.ok) {
                 continue
             }
-            const jsonData = JSON.parse(await response.text());
+            const text = await response.text();
+            const jsonData = JSON.parse(text);
             const info = {
                 username: jsonData.user.login,
                 labels: jsonData.labels.map(item => ({ name: item.name, description: item.description }))
@@ -82,7 +83,7 @@ async function domainQuery(path, env) {
             return new Response(`{"code": 404}`, { status: 404, headers: JSON_WITH_CACHE });
         }
         const domainData = jsonData[domain];
-        fillPullInfo(domainData, env);
+        await fillPullInfo(domainData, env);
         const result = {
             code: 200,
             updateTime: jsonData["^updateTime"],

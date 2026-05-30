@@ -57,7 +57,14 @@ const preStyle: CSSProperties = {
     wordBreak: "break-word",
 };
 
-const QueryPart = memo(() => {
+const preBlockStyle: CSSProperties = {
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+    display: "inline-block",
+    textAlign: "left",
+};
+
+const QueryPart = memo(({ P }: { P?: boolean }) => {
     const [error, setError] = useState(false);
     const [loading, setLoading] = useState(false);
     const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
@@ -100,14 +107,14 @@ const QueryPart = memo(() => {
         <Box style={queryStyle}>
             <TextField
                 error={error}
-                disabled={loading}
+                disabled={loading || P}
                 id="domain"
                 label="Domain"
                 variant="filled"
                 InputProps={{
                     endAdornment: <InputAdornment position="end">.js.org</InputAdornment>
                 }}
-                defaultValue="lookup"
+                defaultValue={P ? "Loading..." : "lookup"}
                 inputRef={domainInputRef}
                 inputProps={inputProps}
                 onInput={validateInput}
@@ -116,7 +123,7 @@ const QueryPart = memo(() => {
             <LoadingButton
                 variant="contained"
                 disabled={error}
-                loading={loading}
+                loading={loading || P}
                 onClick={submitQuery}>
                 Lookup
             </LoadingButton>
@@ -127,28 +134,28 @@ const QueryPart = memo(() => {
             </Box>
         ) : (
             <Box>
-                <Typography variant="h2" component="p">
+                <Typography variant="h6" component="p">
                     <b>Updated Time:</b>&nbsp;<pre style={preStyle}>{new Date(queryResult.result.updateTime * 1000).toLocaleString()}</pre>
                 </Typography>
-                <pre style={preStyle}>{JSON.stringify(queryResult.result, null, 2)}</pre>
+                <pre style={preBlockStyle}>{JSON.stringify(queryResult.result, null, 2)}</pre>
             </Box>
         ))}
     </div>
 });
 
-const IndexApp = memo(() => {
+const IndexApp = memo(({ P }: { P?: boolean }) => {
     return <Container>
         <Box sx={boxSx}>
             <p>
                 Query the registration time, registrant username, modification records, and other relevant information of JS.ORG subdomains.
                 View statistical information of JS.ORG subdomains.
             </p>
-            <QueryPart />
+            <QueryPart P={P} />
         </Box>
     </Container>
 });
 
-export default function IndexPage() {
+export default function IndexPage({ P }: { P?: boolean }) {
     const darkMode = useMediaQuery("(prefers-color-scheme: dark)");
     const theme = useMemo(() => createTheme({
         palette: {
@@ -168,7 +175,7 @@ export default function IndexPage() {
                 </AppBar>
             </HideOnScroll>
             <Toolbar />
-            <IndexApp />
+            <IndexApp P={P} />
         </ThemeProvider>
     );
 }
