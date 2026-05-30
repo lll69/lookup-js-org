@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npx webpack && npx tsc -P worker/tsconfig.json"
+    "build": "npx webpack"
   },
   "author": "lll69",
   "license": "Apache-2.0",
