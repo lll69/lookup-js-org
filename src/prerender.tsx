@@ -17,7 +17,7 @@ function renderIndex() {
             </head>
             <body>
                 <div id="root">
-                    <IndexPage />
+                    <IndexPage P />
                     <noscript><center>You need to enable JavaScript to run this app.</center></noscript>
                 </div>
                 {(manifest.index as string[]).map(src => <script src={src}></script>)}
