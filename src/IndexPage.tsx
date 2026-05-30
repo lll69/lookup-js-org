@@ -1,6 +1,28 @@
 import { LoadingButton } from "@mui/lab";
 import { AppBar, Box, Button, Card, Container, createTheme, CssBaseline, FormControl, InputAdornment, OutlinedInput, Slide, TextField, ThemeProvider, Toolbar, Typography, useMediaQuery, useScrollTrigger } from "@mui/material";
-import { FormEvent, memo, useCallback, useMemo, useRef, useState } from "react";
+import { CSSProperties, FormEvent, KeyboardEvent, memo, useCallback, useMemo, useRef, useState } from "react";
+
+type HistoryItem = {
+    time: number,
+    type: "cname" | "ns" | "remove",
+    server: string | null,
+    comment: string | null,
+    commit: string,
+    pull: number | null,
+}
+type QueryResultSuccess = {
+    success: true,
+    result: {
+        updateTime: number,
+        name: string,
+        history: HistoryItem[],
+    },
+}
+type QueryResultError = {
+    success: false,
+    error: string,
+}
+type QueryResult = QueryResultSuccess | QueryResultError;
 
 const HideOnScroll = ({ children }) => {
     const trigger = useScrollTrigger();
@@ -27,19 +49,27 @@ const domainPattern = /^(?:[a-z0-9_\-\.]+)$/;
 
 const inputProps = {
     pattern: "^(?:[a-z0-9_\\-\\.]+)$",
+    maxLength: 60,
+};
+
+const preStyle: CSSProperties = {
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
 };
 
 const QueryPart = memo(() => {
     const [error, setError] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [queryResult, setQueryResult] = useState("");
+    const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
     const domainInputRef = useRef<HTMLInputElement>(null);
-    const validateInput = useCallback((e: FormEvent) => {
-        const isError = domainPattern.test(domainInputRef.current!.value);
-        setError(!isError);
+    const validateInput = useCallback(() => {
+        const isError = !domainPattern.test(domainInputRef.current!.value);
+        setError(isError);
+        if (queryResult !== null) setQueryResult(null);
+        return !isError;
     }, []);
     const submitQuery = useCallback(() => {
-        if (!validateInput) {
+        if (!validateInput()) {
             domainInputRef.current!.focus();
             return;
         }
@@ -47,19 +77,24 @@ const QueryPart = memo(() => {
         const domain = domainInputRef.current!.value;
         async function asyncFetch() {
             try {
-                const response = await fetch("/api/domain/" + domain, { method: "POST" });
+                const response = await fetch("/api/domain/" + domain, { method: "GET" });
                 if (!response.ok) {
                     throw Error("status = " + response.status);
                 }
                 const text = await response.text();
                 setLoading(false);
-                setQueryResult(text);
+                setQueryResult({ success: true, result: JSON.parse(text) });
             } catch (e) {
                 setLoading(false);
-                setQueryResult(String(e));
+                setQueryResult({ success: false, error: String(e) });
             }
         }
         asyncFetch();
+    }, []);
+    const onKeyDown = useCallback((e: KeyboardEvent) => {
+        if (e.key === "Enter" && !e.repeat) {
+            submitQuery();
+        }
     }, []);
     return <div>
         <Box style={queryStyle}>
@@ -75,7 +110,8 @@ const QueryPart = memo(() => {
                 defaultValue="lookup"
                 inputRef={domainInputRef}
                 inputProps={inputProps}
-                onInput={validateInput} />
+                onInput={validateInput}
+                onKeyDown={onKeyDown} />
             &nbsp;
             <LoadingButton
                 variant="contained"
@@ -85,9 +121,18 @@ const QueryPart = memo(() => {
                 Lookup
             </LoadingButton>
         </Box>
-        <Box style={queryStyle}>
-            <pre>{queryResult}</pre>
-        </Box>
+        {queryResult !== null && (!queryResult.success ? (
+            <Box style={queryStyle}>
+                <pre style={preStyle}>{queryResult.error}</pre>
+            </Box>
+        ) : (
+            <Box>
+                <Typography variant="h2" component="p">
+                    <b>Updated Time:</b>&nbsp;<pre style={preStyle}>{new Date(queryResult.result.updateTime * 1000).toLocaleString()}</pre>
+                </Typography>
+                <pre style={preStyle}>{JSON.stringify(queryResult.result, null, 2)}</pre>
+            </Box>
+        ))}
     </div>
 });
 
