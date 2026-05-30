@@ -8,7 +8,7 @@ async function domainQuery(path, env) {
     if (!DOMAIN_PATTERN.test(domain) || domain.length > 60 || domain.length <= 0) {
         return new Response('{"code": 404}', { status: 404, headers: JSON_TYPE });
     }
-    const firstChar = domain[0];
+    let firstChar = domain[0];
     if (!(firstChar <= "a" && firstChar >= "z")) {
         firstChar = "z";
     }
