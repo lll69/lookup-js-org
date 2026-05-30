@@ -47,7 +47,7 @@ const QueryPart = memo(() => {
         const domain = domainInputRef.current!.value;
         async function asyncFetch() {
             try {
-                const response = await fetch(domain, { method: "POST" });
+                const response = await fetch("/api/domain/" + domain, { method: "POST" });
                 if (!response.ok) {
                     throw Error("status = " + response.status);
                 }
