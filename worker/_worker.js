@@ -19,6 +19,7 @@ async function domainQuery(path, env) {
             headers: {
                 "Accept": "application/vnd.github.raw+json",
                 "Authorization": "Bearer " + env.GITHUB_TOKEN,
+                "User-Agent": "LookupJsOrg",
             }
         });
         const text = await response.text();
@@ -42,7 +43,6 @@ async function domainQuery(path, env) {
     } catch (e) {
         return new Response(JSON.stringify({
             code: 500,
-            data: String(e)
         }), { status: 500, headers: JSON_TYPE });
     }
 }
