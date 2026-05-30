@@ -48,7 +48,7 @@ async function fillPullInfo(domainData, env) {
     domainData.pullInfo = prInfo;
 }
 
-async function domainQuery(path, env) {
+async function domainQuery(path, env, cache) {
     const domain = path.substring(DOMAIN_API.length);
     if (!DOMAIN_PATTERN.test(domain) || domain.length > 60 || domain.length <= 0) {
         return new Response('{"code": 404}', { status: 404, headers: JSON_WITH_CACHE });
@@ -97,28 +97,48 @@ async function domainQuery(path, env) {
     }
 }
 
-async function processApi(path, env) {
+async function processApi(path, env, cache) {
     if (path.startsWith(DOMAIN_API)) {
-        return domainQuery(path, env);
+        return domainQuery(path, env, cache);
     }
     return new Response('{"code": 404}', { status: 404, headers: JSON_TYPE });
 }
 
 export default {
     async fetch(request, env) {
+        const cache = caches.default;
         const url = new URL(request.url);
         if (url.pathname.startsWith("/api/")) {
             if (request.method !== "GET") {
                 return new Response("501 Not Implemented", { status: 501, statusText: "Not Implemented" });
             }
-            return processApi(url.pathname, env);
+            let response = await processApi(url.pathname, env, cache);
+            if (response.headers.has("Cache-Control")) {
+                try {
+                    await cache.put(request, response);
+                } catch (e) {
+                }
+            }
+            return response;
         }
 
-        return env.ASSETS.fetch(request, {
+        let response = await cache.match(request);
+        if (typeof response !== "undefined") {
+            return response;
+        }
+        response = await env.ASSETS.fetch(request, {
             cf: {
                 cacheTtl: 21600,
                 cacheEverything: true,
             }
         });
+        response.headers.set("Cache-Control", "max-age=21600");
+        if (url.pathname.endsWith(".js")) {
+            try {
+                await cache.put(request, response);
+            } catch (e) {
+            }
+        }
+        return response;
     },
 };
