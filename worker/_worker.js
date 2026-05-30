@@ -21,11 +21,14 @@ async function domainQuery(path, env) {
                 "Authorization": "Bearer " + env.GITHUB_TOKEN,
             }
         });
-        if (!response.ok) {
-            return new Response(`{"code": ${response.status}}`, { status: response.status === 0 ? 500 : response.status, headers: JSON_TYPE });
-        }
         const text = await response.text();
         const jsonData = JSON.parse(text);
+        if (!response.ok) {
+            return new Response(JSON.stringify({
+                code: response.status,
+                data: jsonData
+            }), { status: response.status === 0 ? 500 : response.status, headers: JSON_TYPE });
+        }
         if (!jsonData.hasOwnProperty(domain)) {
             return new Response(`{"code": 404}`, { status: 404, headers: JSON_TYPE });
         }
