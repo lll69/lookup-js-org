@@ -1,0 +1,38 @@
+{
+  "name": "lookup-js-org",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx webpack && npx tsc -P worker/tsconfig.json"
+  },
+  "author": "lll69",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/lab": "^5.0.0-alpha.177",
+    "@mui/material": "^5.18.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sprintf-js": "^1.1.3",
+    "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.27",
+    "@types/react-dom": "^18.3.7",
+    "@types/sprintf-js": "^1.1.3",
+    "clean-webpack-plugin": "^4.0.0",
+    "copy-webpack-plugin": "^12.0.2",
+    "css-loader": "^7.1.2",
+    "css-minimizer-webpack-plugin": "^7.0.0",
+    "html-minimizer-webpack-plugin": "^5.0.0",
+    "style-loader": "^4.0.0",
+    "terser-webpack-plugin": "^5.3.14",
+    "ts-loader": "^9.5.1",
+    "tsx": "^4.20.0",
+    "webpack": "^5.94.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-manifest-plugin": "^5.0.0"
+  }
+}
