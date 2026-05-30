@@ -9,7 +9,7 @@ async function domainQuery(path, env) {
         return new Response('{"code": 404}', { status: 404, headers: JSON_TYPE });
     }
     let firstChar = domain[0];
-    if (!(firstChar <= "a" && firstChar >= "z")) {
+    if (!(firstChar >= "a" && firstChar <= "z")) {
         firstChar = "z";
     }
     const url = `https://api.github.com/repos/lll69/js-org-stats/contents/${firstChar}.json?ref=stat`;
