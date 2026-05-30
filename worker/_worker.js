@@ -21,10 +21,13 @@ async function domainQuery(path, env) {
                 "Authorization": "Bearer " + env.GITHUB_TOKEN,
             }
         });
-        if (!response.ok) {
-            return new Response(`{"code": ${response.status}}`, { status: response.status === 0 ? 500 : response.status, headers: JSON_TYPE });
-        }
         const text = await response.text();
+        if (!response.ok) {
+            return new Response(JSON.stringify({
+                code: response.status,
+                data: text
+            }), { status: response.status === 0 ? 500 : response.status, headers: JSON_TYPE });
+        }
         const jsonData = JSON.parse(text);
         if (!jsonData.hasOwnProperty(domain)) {
             return new Response(`{"code": 404}`, { status: 404, headers: JSON_TYPE });
@@ -37,7 +40,10 @@ async function domainQuery(path, env) {
         }
         return new Response(JSON.stringify(result), { status: 200, headers: JSON_TYPE });
     } catch (e) {
-        return new Response('{"code": 500}', { status: 500, headers: JSON_TYPE });
+        return new Response(JSON.stringify({
+            code: 500,
+            data: String(e)
+        }), { status: 500, headers: JSON_TYPE });
     }
 }
 
