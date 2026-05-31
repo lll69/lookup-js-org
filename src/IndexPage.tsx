@@ -17,9 +17,27 @@ type PullInfoItem = {
         description: string,
     }[],
 }
-type QueryResultSuccess = {
-    success: true,
+const enum QueryStatus {
+    SUCCESS = "SUCCESS",
+    INVALID_INPUT = "INVALID_INPUT",
+    UPSTREAM_ERROR = "UPSTREAM_ERROR",
+    DOMAIN_NOT_FOUND = "DOMAIN_NOT_FOUND",
+}
+type QueryResultNotSuccess = {
+    hasResult: true,
     result: {
+        code: 400 | 404 | 500,
+        status: QueryStatus,
+        upstreamCode?: number,
+        updateTime?: number,
+        data?: any,
+    },
+}
+type QueryResultSuccess = {
+    hasResult: true,
+    result: {
+        code: 200,
+        status: QueryStatus.SUCCESS,
         updateTime: number,
         name: string,
         history: HistoryItem[],
@@ -29,10 +47,17 @@ type QueryResultSuccess = {
     },
 }
 type QueryResultError = {
-    success: false,
+    hasResult: false,
     error: string,
 }
-type QueryResult = QueryResultSuccess | QueryResultError;
+type QueryResult = QueryResultSuccess | QueryResultNotSuccess | QueryResultError;
+
+const queryStatusString = {
+    [QueryStatus.SUCCESS]: "Success",
+    [QueryStatus.INVALID_INPUT]: "Invalid Domain",
+    [QueryStatus.UPSTREAM_ERROR]: "Server Error",
+    [QueryStatus.DOMAIN_NOT_FOUND]: "Domain Not Found",
+}
 
 const HideOnScroll = ({ children }) => {
     const trigger = useScrollTrigger();
@@ -109,17 +134,16 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
         setLoading(true);
         const domain = domainInputRef.current!.value;
         async function asyncFetch() {
+            let response: Response;
             try {
-                const response = await fetch("/api/domain/" + domain, { method: "GET" });
-                if (!response.ok) {
-                    throw Error(response.status === 404 ? "Domain Not Found" : "status = " + response.status);
-                }
+                response = await fetch("/api/domain/" + domain, { method: "GET" });
                 const text = await response.text();
+                setQueryResult({ hasResult: true, result: JSON.parse(text) });
                 setLoading(false);
-                setQueryResult({ success: true, result: JSON.parse(text) });
             } catch (e) {
                 setLoading(false);
-                setQueryResult({ success: false, error: String(e) });
+                // @ts-ignore
+                setQueryResult({ hasResult: false, error: response && !response.ok && response.status !== 0 ? "Error: Status = " + response.status : String(e) });
             }
         }
         asyncFetch();
@@ -154,9 +178,28 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
                 Lookup
             </LoadingButton>
         </Box>
-        {queryResult !== null && (!queryResult.success ? (
+        {queryResult !== null && (!queryResult.hasResult ? (
             <Box style={queryStyle}>
+                <br />
                 <pre style={preInlineStyle}>{queryResult.error}</pre>
+            </Box>
+        ) : queryResult.result.code !== 200 ? (
+            <Box>
+                <br />
+                {queryResult.result.updateTime && (
+                    <Typography variant="h6" component="p">
+                        <b>Data Updated Time:</b> <pre style={preInlineStyle}>{new Date(queryResult.result.updateTime * 1000).toLocaleString()}</pre>
+                    </Typography>
+                )}
+                <div>
+                    <pre style={preInlineStyle}>{queryStatusString[queryResult.result.status]}</pre>
+                </div>
+                {queryResult.result.data && (
+                    <details>
+                        <summary style={summaryStyle}>Raw Data</summary>
+                        <pre style={preBlockStyle}>{queryResult.result.data}</pre>
+                    </details>
+                )}
             </Box>
         ) : (
             <Box>
@@ -170,15 +213,15 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
                 {queryResult.result.history.map((historyItem, i) => (
                     <Card key={historyItem.time} style={cardMarginStyle}>
                         <Typography variant="h5" component="div">
-                            <b>{historyItem.type === "remove" ? "Remove" : (i === 0 || queryResult.result.history[i - 1].type === "remove") ? "Register" : "Change"}</b>
+                            <b>{historyItem.type === "remove" ? "Remove" : (i === 0 || (queryResult as QueryResultSuccess).result.history[i - 1].type === "remove") ? "Register" : "Change"}</b>
                         </Typography>
                         <Typography variant="body2" component="div">
                             <b>Time:</b> {new Date(historyItem.time * 1000).toLocaleString()}
                         </Typography>
                         {historyItem.pull !== null && <>
-                            {queryResult.result.pullInfo[historyItem.pull] && (
+                            {(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull] && (
                                 <Typography variant="body2" component="div">
-                                    <b>User:</b> <Link href={"https://github.com/" + queryResult.result.pullInfo[historyItem.pull].username}>{queryResult.result.pullInfo[historyItem.pull].username}</Link>
+                                    <b>User:</b> <Link href={"https://github.com/" + (queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}>{(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}</Link>
                                 </Typography>
                             )}
                             <Typography variant="body2" component="div">
