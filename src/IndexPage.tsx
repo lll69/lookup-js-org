@@ -136,7 +136,7 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
         async function asyncFetch() {
             let response: Response;
             try {
-                response = await fetch("https://test.lookup-js-org.pages.dev/api/domain/" + domain, { method: "GET" });
+                response = await fetch("/api/domain/" + domain, { method: "GET" });
                 const text = await response.text();
                 setQueryResult({ hasResult: true, result: JSON.parse(text) });
                 setLoading(false);
