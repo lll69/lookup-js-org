@@ -48,7 +48,7 @@ function getDayData(timeData, requestedYear, requestedMonth) {
 }
 
 export async function onRequestGet({ request, env, params }) {
-    const pathParts = String(params.day).trim().split("/");
+    const pathParts = params.day;
     if (pathParts.length !== 2) {
         return new Response(JSON.stringify({
             code: 400,
