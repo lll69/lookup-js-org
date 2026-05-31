@@ -12,7 +12,7 @@ const __dirname = import.meta.dirname;
 
 export default {
   entry: {
-    index: "./src/index.tsx",
+    index: { import: "./src/index.tsx", filename: "[name].[contenthash].js" },
   },
   module: {
     rules: [
@@ -70,6 +70,31 @@ export default {
     path: path.resolve(__dirname, "dist"),
   },
   optimization: {
+    splitChunks: {
+      chunks: "all",
+      minSize: 16384,
+      minChunks: 2,
+      filename: "A[name].[contenthash].js",
+      cacheGroups: {
+        mui: {
+          test: /[\\/]node_modules[\\/](@emotion|@fontsource|@mui)[\\/]/,
+          priority: 20,
+          reuseExistingChunk: true,
+          filename: "U[name].[contenthash].js" // Ui
+        },
+        moment: {
+          test: /[\\/]node_modules[\\/](@date-io|dayjs)[\\/]/,
+          priority: 10,
+          reuseExistingChunk: true,
+          filename: "D[name].[contenthash].js" // Date
+        },
+        default: {
+          priority: -20,
+          reuseExistingChunk: true,
+          filename: "A[name].[contenthash].js" // App
+        },
+      }
+    },
     minimizer: [
       new TerserPlugin({
         terserOptions: {
