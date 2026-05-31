@@ -94,6 +94,7 @@ const InlinePre = styled.pre({
     whiteSpace: "pre-wrap",
     wordBreak: "break-word",
     display: "inline",
+    fontFamily: "'Roboto Mono', monospace",
 });
 
 const BlockPre = styled.pre({
@@ -101,6 +102,7 @@ const BlockPre = styled.pre({
     wordBreak: "break-word",
     display: "inline-block",
     textAlign: "left",
+    fontFamily: "'Roboto Mono', monospace",
 });
 
 const CardWithMargin = styled(Card)({
@@ -172,7 +174,7 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
                 inputProps={inputProps}
                 onInput={validateInput}
                 onKeyDown={onKeyDown} />
-            &nbsp;
+            <InlinePre>&nbsp;</InlinePre>
             <LoadingButton
                 variant="contained"
                 disabled={error}
