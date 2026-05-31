@@ -20,7 +20,7 @@ async function fillPullInfo(domainData, env) {
     }
     for (const pr of prIds) {
         try {
-            const response = await fetch("https://api.github.com/repos/js-org/js.org/pulls/" + pr, {
+            const response = await fetch("https://api.github.com/repos/js-org/js.org/pulls/" + parseInt(pr), {
                 method: "GET",
                 headers: {
                     "Accept": "application/json",
@@ -79,7 +79,6 @@ async function domainQuery(domain, env) {
                 code: 500,
                 status: "UPSTREAM_ERROR",
                 upstreamCode: response.status,
-                data: text
             }), { status: 500, headers: JSON_TYPE });
         }
         const jsonData = JSON.parse(text);

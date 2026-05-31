@@ -55,7 +55,6 @@ export async function onRequestGet({ request, env, params }) {
                 code: 500,
                 status: "UPSTREAM_ERROR",
                 upstreamCode: response.status,
-                data: text
             }), { status: 500, headers: JSON_TYPE });
         }
         const jsonData = JSON.parse(text);
