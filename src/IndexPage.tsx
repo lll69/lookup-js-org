@@ -343,6 +343,8 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
     const [month, setMonth] = useState<number | null>(null);
     const [loadingDay, setLoadingDay] = useState(false);
     const [queryResultDay, setQueryResultDay] = useState<QueryDayResult | null>(null);
+    const monthRef = useRef<HTMLDivElement>(null);
+    const dayRef = useRef<HTMLDivElement>(null);
     const asyncFetchYear = useCallback(async () => {
         let response: Response;
         try {
@@ -431,6 +433,13 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
         setQueryResultDay(null);
         asyncFetchDay(month);
     }
+    useEffect(() => {
+        if (!loadingMonth && queryResultMonth !== null && queryResultMonth.hasResult && queryResultMonth.result.code === 200) {
+            if (monthRef.current !== null) {
+                monthRef.current.scrollIntoView({ behavior: "smooth" });
+            }
+        }
+    }, [loadingMonth, queryResultMonth]);
     const asyncFetchDay = useCallback(async (month: string) => {
         let response: Response;
         try {
@@ -467,6 +476,13 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
             },
         ] : null
     ), [queryResultDay]);
+    useEffect(() => {
+        if (!loadingDay && queryResultDay !== null && queryResultDay.hasResult && queryResultDay.result.code === 200) {
+            if (dayRef.current !== null) {
+                dayRef.current.scrollIntoView({ behavior: "smooth" });
+            }
+        }
+    }, [loadingDay, queryResultDay]);
     return <div>
         <Divider />
         <Typography variant="h4" component="h2" sx={marginTopStyle}>
@@ -529,7 +545,7 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
                 )}
             </Box>
         ) : (
-            <Box>
+            <Box ref={monthRef}>
                 <br />
                 <Typography variant="h6" component="p">
                     <b>Monthly data for {year}:</b>
@@ -561,7 +577,7 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
                 )}
             </Box>
         ) : (
-            <Box>
+            <Box ref={dayRef}>
                 <br />
                 <Typography variant="h6" component="p">
                     <b>Daily data for {year}-{month! + 1}:</b>
