@@ -48,10 +48,12 @@ async function fillPullInfo(domainData, env) {
     domainData.pullInfo = prInfo;
 }
 
-async function domainQuery(path, env, cache) {
-    const domain = path.substring(DOMAIN_API.length);
+async function domainQuery(domain, env) {
     if (!DOMAIN_PATTERN.test(domain) || domain.length > 60 || domain.length <= 0) {
-        return new Response('{"code": 404}', { status: 404, headers: JSON_WITH_CACHE });
+        return new Response(JSON.stringify({
+            code: 400,
+            status: "INVALID_INPUT",
+        }), { status: 400, headers: JSON_WITH_CACHE });
     }
     let firstChar = domain[0];
     if (!(firstChar >= "a" && firstChar <= "z")) {
@@ -74,18 +76,25 @@ async function domainQuery(path, env, cache) {
         const text = await response.text();
         if (!response.ok) {
             return new Response(JSON.stringify({
-                code: response.status,
+                code: 500,
+                status: "UPSTREAM_ERROR",
+                upstreamCode: response.status,
                 data: text
-            }), { status: response.status === 0 ? 500 : response.status, headers: JSON_TYPE });
+            }), { status: 500, headers: JSON_TYPE });
         }
         const jsonData = JSON.parse(text);
         if (!jsonData.hasOwnProperty(domain)) {
-            return new Response(`{"code": 404}`, { status: 404, headers: JSON_WITH_CACHE });
+            return new Response(JSON.stringify({
+                code: 404,
+                status: "DOMAIN_NOT_FOUND",
+                updateTime: jsonData["^updateTime"],
+            }), { status: 404, headers: JSON_WITH_CACHE });
         }
         const domainData = jsonData[domain];
         await fillPullInfo(domainData, env);
         const result = {
             code: 200,
+            status: "SUCCESS",
             updateTime: jsonData["^updateTime"],
             ...domainData
         }
@@ -97,48 +106,8 @@ async function domainQuery(path, env, cache) {
     }
 }
 
-async function processApi(path, env, cache) {
-    if (path.startsWith(DOMAIN_API)) {
-        return domainQuery(path, env, cache);
-    }
-    return new Response('{"code": 404}', { status: 404, headers: JSON_TYPE });
+export async function onRequestGet({ request, env, params }) {
+    const domain = String(params.domain);
+    let response = await domainQuery(domain, env);
+    return response;
 }
-
-export default {
-    async fetch(request, env) {
-        const cache = caches.default;
-        const url = new URL(request.url);
-        if (url.pathname.startsWith("/api/")) {
-            if (request.method !== "GET") {
-                return new Response("501 Not Implemented", { status: 501, statusText: "Not Implemented" });
-            }
-            let response = await processApi(url.pathname, env, cache);
-            if (response.headers.has("Cache-Control")) {
-                try {
-                    await cache.put(request, response);
-                } catch (e) {
-                }
-            }
-            return response;
-        }
-
-        let response = await cache.match(request);
-        if (typeof response !== "undefined") {
-            return response;
-        }
-        response = await env.ASSETS.fetch(request, {
-            cf: {
-                cacheTtl: 21600,
-                cacheEverything: true,
-            }
-        });
-        response.headers.set("Cache-Control", "max-age=21600");
-        if (url.pathname.endsWith(".js")) {
-            try {
-                await cache.put(request, response);
-            } catch (e) {
-            }
-        }
-        return response;
-    },
-};

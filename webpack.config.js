@@ -38,7 +38,6 @@ export default {
     new CopyPlugin({
       patterns: [
         { from: "static", to: "" },
-        { from: "worker", to: "" },
       ]
     }),
     {
