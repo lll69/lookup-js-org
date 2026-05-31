@@ -1,7 +1,8 @@
 import styled from "@emotion/styled";
 import { LoadingButton } from "@mui/lab";
-import { AppBar, Box, Card, Chip, Container, createTheme, CssBaseline, InputAdornment, Link, Slide, TextField, ThemeProvider, Toolbar, Tooltip, Typography, useMediaQuery, useScrollTrigger } from "@mui/material";
-import { KeyboardEvent, memo, useCallback, useMemo, useRef, useState } from "react";
+import { AppBar, Box, Card, Chip, CircularProgress, Container, createTheme, CssBaseline, Divider, InputAdornment, Link, Slide, TextField, ThemeProvider, Toolbar, Tooltip, Typography, useMediaQuery, useScrollTrigger } from "@mui/material";
+import { BarChart, BarItemIdentifier } from "@mui/x-charts";
+import { KeyboardEvent, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type HistoryItem = {
     time: number,
@@ -24,6 +25,7 @@ const enum QueryStatus {
     UPSTREAM_ERROR = "UPSTREAM_ERROR",
     DOMAIN_NOT_FOUND = "DOMAIN_NOT_FOUND",
     SERVER_ERROR = "SERVER_ERROR",
+    YEAR_NOT_FOUND = "YEAR_NOT_FOUND",
 }
 type QueryResultNotSuccess = {
     hasResult: true,
@@ -54,12 +56,67 @@ type QueryResultError = {
 }
 type QueryResult = QueryResultSuccess | QueryResultNotSuccess | QueryResultError;
 
+type QueryYearResultNotSuccess = QueryResultNotSuccess;
+type QueryYearResultSuccess = {
+    hasResult: true,
+    result: {
+        code: 200,
+        status: QueryStatus.SUCCESS,
+        updateTime: number,
+        data: {
+            [year: string]: {
+                "+": number,
+                "-": number,
+            }
+        },
+    },
+}
+type QueryYearResultError = QueryResultError;
+type QueryYearResult = QueryYearResultSuccess | QueryYearResultNotSuccess | QueryYearResultError;
+
+type QueryMonthResultNotSuccess = QueryResultNotSuccess;
+type QueryMonthResultSuccess = {
+    hasResult: true,
+    result: {
+        code: 200,
+        status: QueryStatus.SUCCESS,
+        updateTime: number,
+        data: {
+            [month: string]: {
+                "+": number,
+                "-": number,
+            }
+        },
+    },
+}
+type QueryMonthResultError = QueryResultError;
+type QueryMonthResult = QueryMonthResultSuccess | QueryMonthResultNotSuccess | QueryMonthResultError;
+
+type QueryDayResultNotSuccess = QueryResultNotSuccess;
+type QueryDayResultSuccess = {
+    hasResult: true,
+    result: {
+        code: 200,
+        status: QueryStatus.SUCCESS,
+        updateTime: number,
+        data: {
+            [day: string]: {
+                "+": number,
+                "-": number,
+            }
+        },
+    },
+}
+type QueryDayResultError = QueryResultError;
+type QueryDayResult = QueryDayResultSuccess | QueryDayResultNotSuccess | QueryDayResultError;
+
 const queryStatusString = {
     [QueryStatus.SUCCESS]: "Success",
     [QueryStatus.INVALID_INPUT]: "Invalid Domain",
     [QueryStatus.UPSTREAM_ERROR]: "Server Error",
     [QueryStatus.DOMAIN_NOT_FOUND]: "Domain Not Found",
     [QueryStatus.SERVER_ERROR]: "Internal Server Error",
+    [QueryStatus.YEAR_NOT_FOUND]: "Year Not Found",
 }
 
 const HideOnScroll = ({ children }) => {
@@ -119,6 +176,14 @@ const ClickableSummary = styled.summary({
     cursor: "pointer",
     userSelect: "none",
 });
+
+const MarginDiv = styled.div({
+    height: "128px",
+});
+
+const marginTopStyle = {
+    marginTop: "8px",
+};
 
 const QueryPart = memo(({ P }: { P?: boolean }) => {
     const [error, setError] = useState(false);
@@ -269,6 +334,247 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
     </div>
 });
 
+const StatPart = memo(({ P }: { P?: boolean }) => {
+    const [loadingYear, setLoadingYear] = useState(true);
+    const [queryResultYear, setQueryResultYear] = useState<QueryYearResult | null>(null);
+    const [year, setYear] = useState<number | null>(null);
+    const [loadingMonth, setLoadingMonth] = useState(false);
+    const [queryResultMonth, setQueryResultMonth] = useState<QueryMonthResult | null>(null);
+    const [month, setMonth] = useState<number | null>(null);
+    const [loadingDay, setLoadingDay] = useState(false);
+    const [queryResultDay, setQueryResultDay] = useState<QueryDayResult | null>(null);
+    const asyncFetchYear = useCallback(async () => {
+        let response: Response;
+        try {
+            response = await fetch("https://lookup.js.org/api/stat/years", { method: "GET" });
+            const text = await response.text();
+            setQueryResultYear({ hasResult: true, result: JSON.parse(text) });
+            setLoadingYear(false);
+        } catch (e) {
+            setLoadingYear(false);
+            // @ts-ignore
+            setQueryResultYear({ hasResult: false, error: response && !response.ok && response.status !== 0 ? "Error: Status = " + response.status : String(e) });
+        }
+    }, []);
+    useEffect(() => { if (!P) asyncFetchYear() }, []);
+    const hasYearResult = (queryResultYear !== null && queryResultYear.hasResult && queryResultYear.result.status === QueryStatus.SUCCESS);
+    const yearKeys = useMemo(() => (
+        hasYearResult ? Object.keys(queryResultYear.result.data) : null
+    ), [queryResultYear]);
+    const yearXAxis = useMemo(() => (
+        hasYearResult ? [{ scaleType: "band" as "band", data: yearKeys! }] : null
+    ), [queryResultYear]);
+    const yearSeries = useMemo(() => (
+        hasYearResult ? [
+            {
+                data: yearKeys!.map(year => queryResultYear.result.data[year]["+"]),
+                label: "Register",
+                barLabel: "value" as "value",
+                barLabelPlacement: "outside" as "outside",
+            },
+            {
+                data: yearKeys!.map(year => queryResultYear.result.data[year]["-"]),
+                label: "Remove",
+                barLabel: "value" as "value",
+                barLabelPlacement: "outside" as "outside",
+            },
+        ] : null
+    ), [queryResultYear]);
+    const onYearClick = (_, data: BarItemIdentifier) => {
+        const year = yearKeys![data.dataIndex];
+        setLoadingMonth(true);
+        setYear(parseInt(year));
+        setQueryResultMonth(null);
+        setQueryResultDay(null);
+        asyncFetchMonth(year);
+    }
+    const asyncFetchMonth = useCallback(async (year: string) => {
+        let response: Response;
+        try {
+            response = await fetch("https://lookup.js.org/api/stat/month/" + year, { method: "GET" });
+            const text = await response.text();
+            setQueryResultMonth({ hasResult: true, result: JSON.parse(text) });
+            setLoadingMonth(false);
+        } catch (e) {
+            setLoadingMonth(false);
+            // @ts-ignore
+            setQueryResultMonth({ hasResult: false, error: response && !response.ok && response.status !== 0 ? "Error: Status = " + response.status : String(e) });
+        }
+    }, []);
+    const hasMonthResult = (queryResultMonth !== null && queryResultMonth.hasResult && queryResultMonth.result.status === QueryStatus.SUCCESS);
+    const monthKeys = useMemo(() => (
+        hasMonthResult ? Object.keys(queryResultMonth.result.data) : null
+    ), [queryResultMonth]);
+    const monthXAxis = useMemo(() => (
+        hasMonthResult ? [{ scaleType: "band" as "band", data: monthKeys!.map(x => year + "-" + (parseInt(x) + 1)) }] : null
+    ), [queryResultMonth]);
+    const monthSeries = useMemo(() => (
+        hasMonthResult ? [
+            {
+                data: monthKeys!.map(month => queryResultMonth.result.data[month]["+"]),
+                label: "Register",
+                barLabel: "value" as "value",
+                barLabelPlacement: "outside" as "outside",
+            },
+            {
+                data: monthKeys!.map(month => queryResultMonth.result.data[month]["-"]),
+                label: "Remove",
+                barLabel: "value" as "value",
+                barLabelPlacement: "outside" as "outside",
+            },
+        ] : null
+    ), [queryResultMonth]);
+    const onMonthClick = (_, data: BarItemIdentifier) => {
+        const month = monthKeys![data.dataIndex];
+        setLoadingDay(true);
+        setMonth(parseInt(month));
+        setQueryResultDay(null);
+        asyncFetchDay(month);
+    }
+    const asyncFetchDay = useCallback(async (month: string) => {
+        let response: Response;
+        try {
+            response = await fetch("https://lookup.js.org/api/stat/day/" + year + "/" + month, { method: "GET" });
+            const text = await response.text();
+            setQueryResultDay({ hasResult: true, result: JSON.parse(text) });
+            setLoadingDay(false);
+        } catch (e) {
+            setLoadingDay(false);
+            // @ts-ignore
+            setQueryResultDay({ hasResult: false, error: response && !response.ok && response.status !== 0 ? "Error: Status = " + response.status : String(e) });
+        }
+    }, [year]);
+    const hasDayResult = (queryResultDay !== null && queryResultDay.hasResult && queryResultDay.result.status === QueryStatus.SUCCESS);
+    const dayKeys = useMemo(() => (
+        hasDayResult ? Object.keys(queryResultDay.result.data).filter(day => queryResultDay.result.data[day]["+"] + queryResultDay.result.data[day]["-"] > 0) : null
+    ), [queryResultDay]);
+    const dayXAxis = useMemo(() => (
+        hasDayResult ? [{ scaleType: "band" as "band", data: dayKeys! }] : null
+    ), [queryResultDay]);
+    const daySeries = useMemo(() => (
+        hasDayResult ? [
+            {
+                data: dayKeys!.map(day => queryResultDay.result.data[day]["+"]),
+                label: "Register",
+                barLabel: "value" as "value",
+                barLabelPlacement: "outside" as "outside",
+            },
+            {
+                data: dayKeys!.map(day => queryResultDay.result.data[day]["-"]),
+                label: "Remove",
+                barLabel: "value" as "value",
+                barLabelPlacement: "outside" as "outside",
+            },
+        ] : null
+    ), [queryResultDay]);
+    return <div>
+        <Divider />
+        <Typography variant="h4" component="h2" sx={marginTopStyle}>
+            Stats (UTC time)
+        </Typography>
+        {loadingYear && <><p><CircularProgress />{" Loading stats..."}</p></>}
+        {!loadingYear && queryResultYear !== null && (!queryResultYear.hasResult ? (
+            <Box>
+                <br />
+                <InlinePre>{queryResultYear.error}</InlinePre>
+            </Box>
+        ) : queryResultYear.result.code !== 200 ? (
+            <Box>
+                <br />
+                {queryResultYear.result.updateTime && (
+                    <Typography variant="h6" component="p">
+                        <b>Data Updated Time:</b> <InlinePre>{new Date(queryResultYear.result.updateTime * 1000).toISOString()}</InlinePre>
+                    </Typography>
+                )}
+                <div>
+                    <InlinePre>Error: {queryStatusString[queryResultYear.result.status]}</InlinePre>
+                </div>
+                {queryResultYear.result.data && (
+                    <details>
+                        <ClickableSummary>Raw Data</ClickableSummary>
+                        <BlockPre>{queryResultYear.result.data}</BlockPre>
+                    </details>
+                )}
+            </Box>
+        ) : (
+            <Box>
+                <br />
+                <Typography variant="h6" component="p">
+                    <b>Data Updated Time:</b> <InlinePre>{new Date(queryResultYear.result.updateTime * 1000).toISOString()}</InlinePre>
+                </Typography>
+                <BarChart
+                    xAxis={yearXAxis!}
+                    series={yearSeries!}
+                    height={400}
+                    onItemClick={onYearClick} />
+            </Box>
+        ))}
+        {loadingMonth && <><p><CircularProgress />{" Loading monthly stats..."}</p></>}
+        {!loadingMonth && queryResultMonth !== null && (!queryResultMonth.hasResult ? (
+            <Box>
+                <br />
+                <InlinePre>{queryResultMonth.error}</InlinePre>
+            </Box>
+        ) : queryResultMonth.result.code !== 200 ? (
+            <Box>
+                <br />
+                <div>
+                    <InlinePre>Error: {queryStatusString[queryResultMonth.result.status]}</InlinePre>
+                </div>
+                {queryResultMonth.result.data && (
+                    <details>
+                        <ClickableSummary>Raw Data</ClickableSummary>
+                        <BlockPre>{queryResultMonth.result.data}</BlockPre>
+                    </details>
+                )}
+            </Box>
+        ) : (
+            <Box>
+                <br />
+                <Typography variant="h6" component="p">
+                    <b>Monthly data for {year}:</b>
+                </Typography>
+                <BarChart
+                    xAxis={monthXAxis!}
+                    series={monthSeries!}
+                    height={400}
+                    onItemClick={onMonthClick} />
+            </Box>
+        ))}
+        {loadingDay && <><p><CircularProgress />{" Loading daily stats..."}</p></>}
+        {!loadingDay && queryResultDay !== null && (!queryResultDay.hasResult ? (
+            <Box>
+                <br />
+                <InlinePre>{queryResultDay.error}</InlinePre>
+            </Box>
+        ) : queryResultDay.result.code !== 200 ? (
+            <Box>
+                <br />
+                <div>
+                    <InlinePre>Error: {queryStatusString[queryResultDay.result.status]}</InlinePre>
+                </div>
+                {queryResultDay.result.data && (
+                    <details>
+                        <ClickableSummary>Raw Data</ClickableSummary>
+                        <BlockPre>{queryResultDay.result.data}</BlockPre>
+                    </details>
+                )}
+            </Box>
+        ) : (
+            <Box>
+                <br />
+                <Typography variant="h6" component="p">
+                    <b>Daily data for {year}-{month! + 1}:</b>
+                </Typography>
+                <BarChart
+                    xAxis={dayXAxis!}
+                    series={daySeries!}
+                    height={400} />
+            </Box>
+        ))}
+    </div>
+});
+
 const IndexApp = memo(({ P }: { P?: boolean }) => {
     return <Container>
         <Box sx={boxSx}>
@@ -277,6 +583,8 @@ const IndexApp = memo(({ P }: { P?: boolean }) => {
                 View statistical information of JS.ORG subdomains.
             </p>
             <QueryPart P={P} />
+            <MarginDiv />
+            <StatPart />
         </Box>
     </Container>
 });

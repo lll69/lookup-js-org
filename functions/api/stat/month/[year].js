@@ -81,6 +81,7 @@ export async function onRequestGet({ request, env, params }) {
             return new Response(JSON.stringify({
                 code: 404,
                 status: "YEAR_NOT_FOUND",
+                updateTime: jsonData["^updateTime"],
             }), { status: 404, headers: JSON_WITH_CACHE });
         }
         const result = {
