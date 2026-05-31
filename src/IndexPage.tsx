@@ -1,6 +1,7 @@
+import styled from "@emotion/styled";
 import { LoadingButton } from "@mui/lab";
 import { AppBar, Box, Card, Chip, Container, createTheme, CssBaseline, InputAdornment, Link, Slide, TextField, ThemeProvider, Toolbar, Tooltip, Typography, useMediaQuery, useScrollTrigger } from "@mui/material";
-import { CSSProperties, KeyboardEvent, memo, useCallback, useMemo, useRef, useState } from "react";
+import { KeyboardEvent, memo, useCallback, useMemo, useRef, useState } from "react";
 
 type HistoryItem = {
     time: number,
@@ -74,11 +75,11 @@ const boxSx = {
     textAlign: "center",
 };
 
-const queryStyle = {
+const CenterFlexBox = styled(Box)({
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-};
+});
 
 const domainPattern = /^(?:[a-z0-9_\-\.]+)$/;
 
@@ -87,33 +88,33 @@ const inputProps = {
     maxLength: 60,
 };
 
-const preInlineStyle: CSSProperties = {
+const InlinePre = styled.pre({
     whiteSpace: "pre-wrap",
     wordBreak: "break-word",
     display: "inline",
-};
+});
 
-const preBlockStyle: CSSProperties = {
+const BlockPre = styled.pre({
     whiteSpace: "pre-wrap",
     wordBreak: "break-word",
     display: "inline-block",
     textAlign: "left",
-};
+});
 
-const cardMarginStyle: CSSProperties = {
+const CardWithMargin = styled(Card)({
     margin: "16px 0",
     padding: "16px",
     textAlign: "left",
-};
+});
 
-const ulStyle: CSSProperties = {
+const UlNoMargin = styled.ul({
     marginBlock: "0",
-};
+});
 
-const summaryStyle: CSSProperties = {
+const ClickableSummary = styled.summary({
     cursor: "pointer",
     userSelect: "none",
-};
+});
 
 const QueryPart = memo(({ P }: { P?: boolean }) => {
     const [error, setError] = useState(false);
@@ -154,7 +155,7 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
         }
     }, []);
     return <div>
-        <Box style={queryStyle}>
+        <CenterFlexBox>
             <TextField
                 error={error}
                 disabled={loading || P}
@@ -177,27 +178,27 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
                 onClick={submitQuery}>
                 Lookup
             </LoadingButton>
-        </Box>
+        </CenterFlexBox>
         {queryResult !== null && (!queryResult.hasResult ? (
-            <Box style={queryStyle}>
+            <Box>
                 <br />
-                <pre style={preInlineStyle}>{queryResult.error}</pre>
+                <InlinePre>{queryResult.error}</InlinePre>
             </Box>
         ) : queryResult.result.code !== 200 ? (
             <Box>
                 <br />
                 {queryResult.result.updateTime && (
                     <Typography variant="h6" component="p">
-                        <b>Data Updated Time:</b> <pre style={preInlineStyle}>{new Date(queryResult.result.updateTime * 1000).toLocaleString()}</pre>
+                        <b>Data Updated Time:</b> <InlinePre>{new Date(queryResult.result.updateTime * 1000).toLocaleString()}</InlinePre>
                     </Typography>
                 )}
                 <div>
-                    <pre style={preInlineStyle}>Error: {queryStatusString[queryResult.result.status]}</pre>
+                    <InlinePre>Error: {queryStatusString[queryResult.result.status]}</InlinePre>
                 </div>
                 {queryResult.result.data && (
                     <details>
-                        <summary style={summaryStyle}>Raw Data</summary>
-                        <pre style={preBlockStyle}>{queryResult.result.data}</pre>
+                        <ClickableSummary>Raw Data</ClickableSummary>
+                        <BlockPre>{queryResult.result.data}</BlockPre>
                     </details>
                 )}
             </Box>
@@ -205,59 +206,59 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
             <Box>
                 <br />
                 <Typography variant="h6" component="p">
-                    <b>Data Updated Time:</b> <pre style={preInlineStyle}>{new Date(queryResult.result.updateTime * 1000).toLocaleString()}</pre>
+                    <b>Data Updated Time:</b> <InlinePre>{new Date(queryResult.result.updateTime * 1000).toLocaleString()}</InlinePre>
                 </Typography>
                 <Typography variant="h6" component="p">
-                    <b>Name:</b> <pre style={preInlineStyle}>{queryResult.result.name}.js.org</pre>
+                    <b>Name:</b> <InlinePre>{queryResult.result.name}.js.org</InlinePre>
                 </Typography>
                 {queryResult.result.history.map((historyItem, i) => (
-                    <Card key={historyItem.time} style={cardMarginStyle}>
+                    <CardWithMargin key={historyItem.time}>
                         <Typography variant="h5" component="div">
                             <b>{historyItem.type === "remove" ? "Remove" : (i === 0 || (queryResult as QueryResultSuccess).result.history[i - 1].type === "remove") ? "Register" : "Change"}</b>
                         </Typography>
                         <Typography variant="body2" component="div">
-                            <b>Time:</b> <pre style={preInlineStyle}>{new Date(historyItem.time * 1000).toLocaleString()}</pre>
+                            <b>Time:</b> <InlinePre>{new Date(historyItem.time * 1000).toLocaleString()}</InlinePre>
                         </Typography>
                         {historyItem.pull !== null && <>
                             {(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull] && (
                                 <Typography variant="body2" component="div">
-                                    <b>User:</b> <Link href={"https://github.com/" + (queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}><pre style={preInlineStyle}>{(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}</pre></Link>
+                                    <b>User:</b> <Link href={"https://github.com/" + (queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}><InlinePre>{(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}</InlinePre></Link>
                                 </Typography>
                             )}
                             <Typography variant="body2" component="div">
-                                <b>Pull Request:</b> <Link href={"https://github.com/js-org/js.org/pull/" + historyItem.pull}><pre style={preInlineStyle}>#{historyItem.pull}</pre></Link>
+                                <b>Pull Request:</b> <Link href={"https://github.com/js-org/js.org/pull/" + historyItem.pull}><InlinePre>#{historyItem.pull}</InlinePre></Link>
                             </Typography>
                         </>}
                         <Typography variant="body2" component="div">
-                            <b>Git Commit:</b> <Link href={"https://github.com/js-org/js.org/commit/" + historyItem.commit}><pre style={preInlineStyle}>{historyItem.commit.substring(0, 7)}</pre></Link>
+                            <b>Git Commit:</b> <Link href={"https://github.com/js-org/js.org/commit/" + historyItem.commit}><InlinePre>{historyItem.commit.substring(0, 7)}</InlinePre></Link>
                         </Typography>
                         {historyItem.server !== null && (typeof historyItem.server === "string" ? (<>
                             <Typography variant="body2" component="div">
-                                <b>{historyItem.type === "cname" ? "CNAME " : "NS "}Server:</b> <pre style={preInlineStyle}>{historyItem.server}</pre>
+                                <b>{historyItem.type === "cname" ? "CNAME " : "NS "}Server:</b> <InlinePre>{historyItem.server}</InlinePre>
                             </Typography>
                             {historyItem.comment !== null && (
                                 <Typography variant="body2" component="div">
-                                    <b>Comment:</b> <pre style={preInlineStyle}>{"// " + historyItem.comment}</pre>
+                                    <b>Comment:</b> <InlinePre>{"// " + historyItem.comment}</InlinePre>
                                 </Typography>
                             )}
                         </>) : (
                             <Typography variant="body2" component="div">
                                 <b>{historyItem.type === "cname" ? "CNAME " : "NS "}Servers:</b>
-                                <ul style={ulStyle}>
+                                <UlNoMargin>
                                     {historyItem.server.map(server => (
-                                        <li key={server}><pre style={preInlineStyle}>{server}</pre></li>
+                                        <li key={server}><InlinePre>{server}</InlinePre></li>
                                     ))}
-                                </ul>
+                                </UlNoMargin>
                             </Typography>
                         ))}
                         {historyItem.pull !== null && (queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull] && (queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].labels.map(label => (
                             <><Tooltip key={label.name} title={label.description}><Chip label={label.name} variant="outlined" /></Tooltip>{" "}</>
                         ))}
-                    </Card>
+                    </CardWithMargin>
                 ))}
                 <details>
-                    <summary style={summaryStyle}>Raw Data</summary>
-                    <pre style={preBlockStyle}>{JSON.stringify(queryResult.result, null, 2)}</pre>
+                    <ClickableSummary>Raw Data</ClickableSummary>
+                    <BlockPre>{JSON.stringify(queryResult.result, null, 2)}</BlockPre>
                 </details>
             </Box>
         ))}
