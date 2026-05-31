@@ -178,7 +178,7 @@ const ClickableSummary = styled.summary({
 });
 
 const MarginDiv = styled.div({
-    height: "128px",
+    height: "256px",
 });
 
 const marginTopStyle = {
@@ -384,14 +384,15 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
             },
         ] : null
     ), [queryResultYear]);
-    const onYearClick = (_, data: BarItemIdentifier) => {
+    const onYearClick = useCallback((_, data: BarItemIdentifier) => {
+        if (loadingMonth) return;
         const year = yearKeys![data.dataIndex];
         setLoadingMonth(true);
         setYear(parseInt(year));
         setQueryResultMonth(null);
         setQueryResultDay(null);
         asyncFetchMonth(year);
-    }
+    }, [loadingMonth])
     const asyncFetchMonth = useCallback(async (year: string) => {
         let response: Response;
         try {
@@ -428,18 +429,21 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
             },
         ] : null
     ), [queryResultMonth]);
-    const onMonthClick = (_, data: BarItemIdentifier) => {
+    const onMonthClick = useCallback((_, data: BarItemIdentifier) => {
+        if (loadingDay) return;
         const month = monthKeys![data.dataIndex];
         setLoadingDay(true);
         setMonth(parseInt(month));
         setQueryResultDay(null);
         asyncFetchDay(month);
-    }
+    }, [loadingDay]);
     useEffect(() => {
-        if (!loadingMonth && queryResultMonth !== null && queryResultMonth.hasResult && queryResultMonth.result.code === 200) {
+        if (loadingMonth) {
             if (monthProgressRef.current !== null) {
-                monthProgressRef.current.scrollIntoView({ behavior: "smooth" });
+                monthProgressRef.current.scrollIntoView();
             }
+        }
+        if (!loadingMonth && queryResultMonth !== null && queryResultMonth.hasResult && queryResultMonth.result.code === 200) {
             if (monthRef.current !== null) {
                 monthRef.current.scrollIntoView({ behavior: "smooth" });
             }
@@ -482,10 +486,12 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
         ] : null
     ), [queryResultDay]);
     useEffect(() => {
-        if (!loadingDay && queryResultDay !== null && queryResultDay.hasResult && queryResultDay.result.code === 200) {
+        if (loadingDay) {
             if (dayProgressRef.current !== null) {
-                dayProgressRef.current.scrollIntoView({ behavior: "smooth" });
+                dayProgressRef.current.scrollIntoView();
             }
+        }
+        if (!loadingDay && queryResultDay !== null && queryResultDay.hasResult && queryResultDay.result.code === 200) {
             if (dayRef.current !== null) {
                 dayRef.current.scrollIntoView({ behavior: "smooth" });
             }
