@@ -384,15 +384,6 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
             },
         ] : null
     ), [queryResultYear]);
-    const onYearClick = useCallback((_, data: BarItemIdentifier) => {
-        if (loadingMonth) return;
-        const year = yearKeys![data.dataIndex];
-        setLoadingMonth(true);
-        setYear(parseInt(year));
-        setQueryResultMonth(null);
-        setQueryResultDay(null);
-        asyncFetchMonth(year);
-    }, [loadingMonth])
     const asyncFetchMonth = useCallback(async (year: string) => {
         let response: Response;
         try {
@@ -406,6 +397,15 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
             setQueryResultMonth({ hasResult: false, error: response && !response.ok && response.status !== 0 ? "Error: Status = " + response.status : String(e) });
         }
     }, []);
+    const onYearClick = useCallback((_, data: BarItemIdentifier) => {
+        if (loadingMonth) return;
+        const year = yearKeys![data.dataIndex];
+        setLoadingMonth(true);
+        setYear(parseInt(year));
+        setQueryResultMonth(null);
+        setQueryResultDay(null);
+        asyncFetchMonth(year);
+    }, [loadingMonth, yearKeys, asyncFetchMonth]);
     const hasMonthResult = (queryResultMonth !== null && queryResultMonth.hasResult && queryResultMonth.result.status === QueryStatus.SUCCESS);
     const monthKeys = useMemo(() => (
         hasMonthResult ? Object.keys(queryResultMonth.result.data) : null
@@ -429,14 +429,6 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
             },
         ] : null
     ), [queryResultMonth]);
-    const onMonthClick = useCallback((_, data: BarItemIdentifier) => {
-        if (loadingDay) return;
-        const month = monthKeys![data.dataIndex];
-        setLoadingDay(true);
-        setMonth(parseInt(month));
-        setQueryResultDay(null);
-        asyncFetchDay(month);
-    }, [loadingDay]);
     useEffect(() => {
         if (loadingMonth) {
             if (monthProgressRef.current !== null) {
@@ -462,6 +454,14 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
             setQueryResultDay({ hasResult: false, error: response && !response.ok && response.status !== 0 ? "Error: Status = " + response.status : String(e) });
         }
     }, [year]);
+    const onMonthClick = useCallback((_, data: BarItemIdentifier) => {
+        if (loadingDay) return;
+        const month = monthKeys![data.dataIndex];
+        setLoadingDay(true);
+        setMonth(parseInt(month));
+        setQueryResultDay(null);
+        asyncFetchDay(month);
+    }, [loadingDay, monthKeys, asyncFetchDay]);
     const hasDayResult = (queryResultDay !== null && queryResultDay.hasResult && queryResultDay.result.status === QueryStatus.SUCCESS);
     const dayKeys = useMemo(() => (
         hasDayResult ? Object.keys(queryResultDay.result.data).filter(day => queryResultDay.result.data[day]["+"] + queryResultDay.result.data[day]["-"] > 0) : null
