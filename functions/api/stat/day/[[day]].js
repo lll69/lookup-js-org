@@ -14,14 +14,14 @@ function getYear(time) {
     return new Date(time * 1000).getUTCFullYear();
 }
 
-function getMonthData(timeData, requestedYear) {
+function getDayData(timeData, requestedYear, requestedMonth) {
     const minYear = getYear(Math.abs(convertTime(timeData[0])));
     const maxYear = getYear(Math.abs(convertTime(timeData[timeData.length - 1])));
-    if (requestedYear < minYear || requestedYear > maxYear) {
+    if (requestedYear < minYear || requestedYear > maxYear || requestedMonth < 0 || requestedMonth >= 12) {
         return null;
     }
-    const result = Array(12);
-    for (let i = 0; i < 12; i++) {
+    const result = Array(31);
+    for (let i = 0; i < 31; i++) {
         result[i] = { "+": 0, "-": 0 };
     }
     for (const item of timeData) {
@@ -30,23 +30,36 @@ function getMonthData(timeData, requestedYear) {
             const year = date.getUTCFullYear();
             if (year !== requestedYear) continue;
             const month = date.getUTCMonth();
-            result[month][item < 0 ? "-" : "+"]++;
+            if (month !== requestedMonth) continue;
+            const day = date.getUTCDate();
+            result[day][item < 0 ? "-" : "+"]++;
         } else {
             const time = item[0];
             const date = new Date(Math.abs(time) * 1000);
             const year = date.getUTCFullYear();
             if (year !== requestedYear) continue;
             const month = date.getUTCMonth();
-            result[month][time < 0 ? "-" : "+"] += item[1];
+            if (month !== requestedMonth) continue;
+            const day = date.getUTCDate();
+            result[day][time < 0 ? "-" : "+"] += item[1];
         }
     }
     return result;
 }
 
 export async function onRequestGet({ request, env, params }) {
-    const yearStr = String(params.year).trim();
+    const pathParts = String(params.day).trim().split("/");
+    if (pathParts.length !== 2) {
+        return new Response(JSON.stringify({
+            code: 400,
+            status: "INVALID_INPUT",
+        }), { status: 400, headers: JSON_WITH_CACHE });
+    }
+    const yearStr = pathParts[0];
     const year = parseInt(yearStr);
-    if (isNaN(year) || isNaN(yearStr)) {
+    const monthStr = pathParts[1];
+    const month = parseInt(monthStr);
+    if (isNaN(year) || isNaN(month) || isNaN(yearStr) || isNaN(monthStr) || month < 0 || month >= 12) {
         return new Response(JSON.stringify({
             code: 400,
             status: "INVALID_INPUT",
@@ -76,7 +89,7 @@ export async function onRequestGet({ request, env, params }) {
             }), { status: 500, headers: JSON_TYPE });
         }
         const jsonData = JSON.parse(text);
-        const data = getMonthData(jsonData.data, year);
+        const data = getDayData(jsonData.data, year, month);
         if (data === null) {
             return new Response(JSON.stringify({
                 code: 404,
