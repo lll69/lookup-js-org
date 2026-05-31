@@ -51,9 +51,9 @@ async function fillPullInfo(domainData, env) {
 async function domainQuery(domain, env) {
     if (!DOMAIN_PATTERN.test(domain) || domain.length > 60 || domain.length <= 0) {
         return new Response(JSON.stringify({
-            code: 404,
+            code: 400,
             status: "INVALID_INPUT",
-        }), { status: 404, headers: JSON_WITH_CACHE });
+        }), { status: 400, headers: JSON_WITH_CACHE });
     }
     let firstChar = domain[0];
     if (!(firstChar >= "a" && firstChar <= "z")) {
@@ -76,10 +76,11 @@ async function domainQuery(domain, env) {
         const text = await response.text();
         if (!response.ok) {
             return new Response(JSON.stringify({
-                code: response.status,
+                code: 500,
                 status: "UPSTREAM_ERROR",
+                upstreamCode: response.status,
                 data: text
-            }), { status: response.status === 0 ? 500 : response.status, headers: JSON_TYPE });
+            }), { status: 500, headers: JSON_TYPE });
         }
         const jsonData = JSON.parse(text);
         if (!jsonData.hasOwnProperty(domain)) {
