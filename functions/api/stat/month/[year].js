@@ -93,6 +93,7 @@ export async function onRequestGet({ request, env, params }) {
     } catch (e) {
         return new Response(JSON.stringify({
             code: 500,
+            status: "SERVER_ERROR",
         }), { status: 500, headers: JSON_TYPE });
     }
 }

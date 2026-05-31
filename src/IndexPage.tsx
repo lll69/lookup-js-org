@@ -23,6 +23,7 @@ const enum QueryStatus {
     INVALID_INPUT = "INVALID_INPUT",
     UPSTREAM_ERROR = "UPSTREAM_ERROR",
     DOMAIN_NOT_FOUND = "DOMAIN_NOT_FOUND",
+    SERVER_ERROR = "SERVER_ERROR",
 }
 type QueryResultNotSuccess = {
     hasResult: true,
@@ -58,6 +59,7 @@ const queryStatusString = {
     [QueryStatus.INVALID_INPUT]: "Invalid Domain",
     [QueryStatus.UPSTREAM_ERROR]: "Server Error",
     [QueryStatus.DOMAIN_NOT_FOUND]: "Domain Not Found",
+    [QueryStatus.SERVER_ERROR]: "Internal Server Error",
 }
 
 const HideOnScroll = ({ children }) => {

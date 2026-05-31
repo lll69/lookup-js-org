@@ -102,6 +102,7 @@ async function domainQuery(domain, env) {
     } catch (e) {
         return new Response(JSON.stringify({
             code: 500,
+            status: "SERVER_ERROR",
         }), { status: 500, headers: JSON_TYPE });
     }
 }
