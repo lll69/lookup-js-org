@@ -20,8 +20,8 @@ function getDayData(timeData, requestedYear, requestedMonth) {
     if (requestedYear < minYear || requestedYear > maxYear || requestedMonth < 0 || requestedMonth >= 12) {
         return null;
     }
-    const result = Array(31);
-    for (let i = 0; i < 31; i++) {
+    const result = Array(32);
+    for (let i = 0; i <= 31; i++) {
         result[i] = { "+": 0, "-": 0 };
     }
     for (const item of timeData) {
