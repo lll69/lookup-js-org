@@ -1,6 +1,6 @@
 import { LoadingButton } from "@mui/lab";
-import { AppBar, Box, Button, Card, Container, createTheme, CssBaseline, FormControl, InputAdornment, Link, OutlinedInput, Slide, TextField, ThemeProvider, Toolbar, Typography, useMediaQuery, useScrollTrigger } from "@mui/material";
-import { CSSProperties, FormEvent, KeyboardEvent, memo, useCallback, useMemo, useRef, useState } from "react";
+import { AppBar, Box, Card, Chip, Container, createTheme, CssBaseline, InputAdornment, Link, Slide, TextField, ThemeProvider, Toolbar, Tooltip, Typography, useMediaQuery, useScrollTrigger } from "@mui/material";
+import { CSSProperties, KeyboardEvent, memo, useCallback, useMemo, useRef, useState } from "react";
 
 type HistoryItem = {
     time: number,
@@ -136,7 +136,7 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
         async function asyncFetch() {
             let response: Response;
             try {
-                response = await fetch("/api/domain/" + domain, { method: "GET" });
+                response = await fetch("https://test.lookup-js-org.pages.dev/api/domain/" + domain, { method: "GET" });
                 const text = await response.text();
                 setQueryResult({ hasResult: true, result: JSON.parse(text) });
                 setLoading(false);
@@ -192,7 +192,7 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
                     </Typography>
                 )}
                 <div>
-                    <pre style={preInlineStyle}>{queryStatusString[queryResult.result.status]}</pre>
+                    <pre style={preInlineStyle}>Error: {queryStatusString[queryResult.result.status]}</pre>
                 </div>
                 {queryResult.result.data && (
                     <details>
@@ -216,34 +216,42 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
                             <b>{historyItem.type === "remove" ? "Remove" : (i === 0 || (queryResult as QueryResultSuccess).result.history[i - 1].type === "remove") ? "Register" : "Change"}</b>
                         </Typography>
                         <Typography variant="body2" component="div">
-                            <b>Time:</b> {new Date(historyItem.time * 1000).toLocaleString()}
+                            <b>Time:</b> <pre style={preInlineStyle}>{new Date(historyItem.time * 1000).toLocaleString()}</pre>
                         </Typography>
                         {historyItem.pull !== null && <>
                             {(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull] && (
                                 <Typography variant="body2" component="div">
-                                    <b>User:</b> <Link href={"https://github.com/" + (queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}>{(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}</Link>
+                                    <b>User:</b> <Link href={"https://github.com/" + (queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}><pre style={preInlineStyle}>{(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}</pre></Link>
                                 </Typography>
                             )}
                             <Typography variant="body2" component="div">
-                                <b>Pull Request:</b> <Link href={"https://github.com/js-org/js.org/pull/" + historyItem.pull}>#{historyItem.pull}</Link>
+                                <b>Pull Request:</b> <Link href={"https://github.com/js-org/js.org/pull/" + historyItem.pull}><pre style={preInlineStyle}>#{historyItem.pull}</pre></Link>
                             </Typography>
                         </>}
                         <Typography variant="body2" component="div">
-                            <b>Git Commit:</b> <Link href={"https://github.com/js-org/js.org/commit/" + historyItem.commit}>{historyItem.commit.substring(0, 7)}</Link>
+                            <b>Git Commit:</b> <Link href={"https://github.com/js-org/js.org/commit/" + historyItem.commit}><pre style={preInlineStyle}>{historyItem.commit.substring(0, 7)}</pre></Link>
                         </Typography>
-                        {historyItem.server !== null && (typeof historyItem.server === "string" ? (
+                        {historyItem.server !== null && (typeof historyItem.server === "string" ? (<>
                             <Typography variant="body2" component="div">
-                                <b>{historyItem.type === "cname" ? "CNAME " : "NS "}Server:</b> <span>{historyItem.server + (historyItem.comment ? " // " + historyItem.comment : "")}</span>
+                                <b>{historyItem.type === "cname" ? "CNAME " : "NS "}Server:</b> <pre style={preInlineStyle}>{historyItem.server}</pre>
                             </Typography>
-                        ) : (
+                            {historyItem.comment !== null && (
+                                <Typography variant="body2" component="div">
+                                    <b>Comment:</b> <pre style={preInlineStyle}>{"// " + historyItem.comment}</pre>
+                                </Typography>
+                            )}
+                        </>) : (
                             <Typography variant="body2" component="div">
                                 <b>{historyItem.type === "cname" ? "CNAME " : "NS "}Servers:</b>
                                 <ul style={ulStyle}>
                                     {historyItem.server.map(server => (
-                                        <li key={server}>{server}</li>
+                                        <li key={server}><pre style={preInlineStyle}>{server}</pre></li>
                                     ))}
                                 </ul>
                             </Typography>
+                        ))}
+                        {historyItem.pull !== null && (queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull] && (queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].labels.map(label => (
+                            <><Tooltip key={label.name} title={label.description}><Chip label={label.name} variant="outlined" /></Tooltip>{" "}</>
                         ))}
                     </Card>
                 ))}
