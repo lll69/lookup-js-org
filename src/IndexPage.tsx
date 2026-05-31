@@ -343,7 +343,9 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
     const [month, setMonth] = useState<number | null>(null);
     const [loadingDay, setLoadingDay] = useState(false);
     const [queryResultDay, setQueryResultDay] = useState<QueryDayResult | null>(null);
+    const monthProgressRef = useRef<HTMLParagraphElement>(null);
     const monthRef = useRef<HTMLDivElement>(null);
+    const dayProgressRef = useRef<HTMLParagraphElement>(null);
     const dayRef = useRef<HTMLDivElement>(null);
     const asyncFetchYear = useCallback(async () => {
         let response: Response;
@@ -435,6 +437,9 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
     }
     useEffect(() => {
         if (!loadingMonth && queryResultMonth !== null && queryResultMonth.hasResult && queryResultMonth.result.code === 200) {
+            if (monthProgressRef.current !== null) {
+                monthProgressRef.current.scrollIntoView({ behavior: "smooth" });
+            }
             if (monthRef.current !== null) {
                 monthRef.current.scrollIntoView({ behavior: "smooth" });
             }
@@ -478,6 +483,9 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
     ), [queryResultDay]);
     useEffect(() => {
         if (!loadingDay && queryResultDay !== null && queryResultDay.hasResult && queryResultDay.result.code === 200) {
+            if (dayProgressRef.current !== null) {
+                dayProgressRef.current.scrollIntoView({ behavior: "smooth" });
+            }
             if (dayRef.current !== null) {
                 dayRef.current.scrollIntoView({ behavior: "smooth" });
             }
@@ -525,7 +533,7 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
                     onItemClick={onYearClick} />
             </Box>
         ))}
-        {loadingMonth && <><p><CircularProgress />{" Loading monthly stats..."}</p></>}
+        {loadingMonth && <><p ref={monthProgressRef}><CircularProgress />{" Loading monthly stats..."}</p></>}
         {!loadingMonth && queryResultMonth !== null && (!queryResultMonth.hasResult ? (
             <Box>
                 <br />
@@ -557,7 +565,7 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
                     onItemClick={onMonthClick} />
             </Box>
         ))}
-        {loadingDay && <><p><CircularProgress />{" Loading daily stats..."}</p></>}
+        {loadingDay && <><p ref={dayProgressRef}><CircularProgress />{" Loading daily stats..."}</p></>}
         {!loadingDay && queryResultDay !== null && (!queryResultDay.hasResult ? (
             <Box>
                 <br />
