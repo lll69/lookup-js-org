@@ -107,14 +107,7 @@ async function domainQuery(domain, env) {
 }
 
 export async function onRequestGet({ request, env, params }) {
-    const cache = caches.default;
     const domain = String(params.domain);
     let response = await domainQuery(domain, env);
-    if (response.headers.has("Cache-Control")) {
-        try {
-            await cache.put(request, response);
-        } catch (e) {
-        }
-    }
     return response;
 }
