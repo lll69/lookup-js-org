@@ -346,7 +346,7 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
     const asyncFetchYear = useCallback(async () => {
         let response: Response;
         try {
-            response = await fetch("https://lookup.js.org/api/stat/years", { method: "GET" });
+            response = await fetch("/api/stat/years", { method: "GET" });
             const text = await response.text();
             setQueryResultYear({ hasResult: true, result: JSON.parse(text) });
             setLoadingYear(false);
@@ -391,7 +391,7 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
     const asyncFetchMonth = useCallback(async (year: string) => {
         let response: Response;
         try {
-            response = await fetch("https://lookup.js.org/api/stat/month/" + year, { method: "GET" });
+            response = await fetch("/api/stat/month/" + year, { method: "GET" });
             const text = await response.text();
             setQueryResultMonth({ hasResult: true, result: JSON.parse(text) });
             setLoadingMonth(false);
@@ -434,7 +434,7 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
     const asyncFetchDay = useCallback(async (month: string) => {
         let response: Response;
         try {
-            response = await fetch("https://lookup.js.org/api/stat/day/" + year + "/" + month, { method: "GET" });
+            response = await fetch("/api/stat/day/" + year + "/" + month, { method: "GET" });
             const text = await response.text();
             setQueryResultDay({ hasResult: true, result: JSON.parse(text) });
             setLoadingDay(false);
