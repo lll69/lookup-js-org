@@ -258,7 +258,7 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
                 <br />
                 {queryResult.result.updateTime && (
                     <Typography variant="h6" component="p">
-                        <b>Data Updated Time:</b> <InlinePre>{new Date(queryResult.result.updateTime * 1000).toLocaleString()}</InlinePre>
+                        <b>Data Update Time:</b> <InlinePre>{new Date(queryResult.result.updateTime * 1000).toLocaleString()}</InlinePre>
                     </Typography>
                 )}
                 <div>
@@ -275,7 +275,7 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
             <Box>
                 <br />
                 <Typography variant="h6" component="p">
-                    <b>Data Updated Time:</b> <InlinePre>{new Date(queryResult.result.updateTime * 1000).toLocaleString()}</InlinePre>
+                    <b>Data Update Time:</b> <InlinePre>{new Date(queryResult.result.updateTime * 1000).toLocaleString()}</InlinePre>
                 </Typography>
                 <Typography variant="h6" component="p">
                     <b>Name:</b> <InlinePre>{queryResult.result.name}.js.org</InlinePre>
@@ -513,7 +513,7 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
                 <br />
                 {queryResultYear.result.updateTime && (
                     <Typography variant="h6" component="p">
-                        <b>Data Updated Time:</b> <InlinePre>{new Date(queryResultYear.result.updateTime * 1000).toISOString()}</InlinePre>
+                        <b>Data Update Time:</b> <InlinePre>{new Date(queryResultYear.result.updateTime * 1000).toISOString()}</InlinePre>
                     </Typography>
                 )}
                 <div>
@@ -530,7 +530,10 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
             <Box>
                 <br />
                 <Typography variant="h6" component="p">
-                    <b>Data Updated Time:</b> <InlinePre>{new Date(queryResultYear.result.updateTime * 1000).toISOString()}</InlinePre>
+                    <b>Data Update Time:</b> <InlinePre>{new Date(queryResultYear.result.updateTime * 1000).toISOString()}</InlinePre>
+                </Typography>
+                <Typography variant="h6" component="p">
+                    Click a year to show monthly stats
                 </Typography>
                 <BarChart
                     xAxis={yearXAxis!}
@@ -562,7 +565,13 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
             <Box ref={monthRef}>
                 <br />
                 <Typography variant="h6" component="p">
-                    <b>Monthly data for {year}:</b>
+                    <b>Monthly stats for {year}:</b>
+                </Typography>
+                <Typography variant="h6" component="p">
+                    <b>Data Update Time:</b> <InlinePre>{new Date(queryResultMonth.result.updateTime * 1000).toISOString()}</InlinePre>
+                </Typography>
+                <Typography variant="h6" component="p">
+                    Click a month to show daily stats
                 </Typography>
                 <BarChart
                     xAxis={monthXAxis!}
@@ -594,7 +603,10 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
             <Box ref={dayRef}>
                 <br />
                 <Typography variant="h6" component="p">
-                    <b>Daily data for {year}-{month! + 1}:</b>
+                    <b>Daily stats for {year}-{month! + 1}:</b>
+                </Typography>
+                <Typography variant="h6" component="p">
+                    <b>Data Update Time:</b> <InlinePre>{new Date(queryResultDay.result.updateTime * 1000).toISOString()}</InlinePre>
                 </Typography>
                 <BarChart
                     xAxis={dayXAxis!}
