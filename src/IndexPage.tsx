@@ -291,15 +291,15 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
                         {historyItem.pull !== null && <>
                             {(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull] && (
                                 <Typography variant="body2" component="div">
-                                    <b>User:</b> <Link href={"https://github.com/" + (queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}><InlinePre>{(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}</InlinePre></Link>
+                                    <b>User:</b> <Link target="_blank" href={"https://github.com/" + (queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}><InlinePre>{(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}</InlinePre></Link>
                                 </Typography>
                             )}
                             <Typography variant="body2" component="div">
-                                <b>Pull Request:</b> <Link href={"https://github.com/js-org/js.org/pull/" + historyItem.pull}><InlinePre>#{historyItem.pull}</InlinePre></Link>
+                                <b>Pull Request:</b> <Link target="_blank" href={"https://github.com/js-org/js.org/pull/" + historyItem.pull}><InlinePre>#{historyItem.pull}</InlinePre></Link>
                             </Typography>
                         </>}
                         <Typography variant="body2" component="div">
-                            <b>Git Commit:</b> <Link href={"https://github.com/js-org/js.org/commit/" + historyItem.commit}><InlinePre>{historyItem.commit.substring(0, 7)}</InlinePre></Link>
+                            <b>Git Commit:</b> <Link target="_blank" href={"https://github.com/js-org/js.org/commit/" + historyItem.commit}><InlinePre>{historyItem.commit.substring(0, 7)}</InlinePre></Link>
                         </Typography>
                         {historyItem.server !== null && (typeof historyItem.server === "string" ? (<>
                             <Typography variant="body2" component="div">
@@ -619,6 +619,17 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
     </div>
 });
 
+const Footer = memo(() => {
+    return <div>
+        <br />
+        <p>The data provided may not be fully accurate or up-to-date.</p>
+        <Divider />
+        <Link target="_blank" href="https://js.org/terms.html">Terms</Link>
+        {" | "}
+        <Link target="_blank" href="https://js.org/privacy.html">Privacy</Link>
+    </div>
+});
+
 const IndexApp = memo(({ P }: { P?: boolean }) => {
     return <Container>
         <Box sx={boxSx}>
@@ -629,6 +640,7 @@ const IndexApp = memo(({ P }: { P?: boolean }) => {
             <QueryPart P={P} />
             <MarginDiv />
             <StatPart />
+            <Footer />
         </Box>
     </Container>
 });
