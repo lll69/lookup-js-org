@@ -1,7 +1,7 @@
 import styled from "@emotion/styled";
 import { LoadingButton } from "@mui/lab";
 import { AppBar, Box, Card, Chip, CircularProgress, Container, createTheme, CssBaseline, Divider, InputAdornment, Link, Slide, TextField, ThemeProvider, Toolbar, Tooltip, Typography, useMediaQuery, useScrollTrigger } from "@mui/material";
-import { BarChart, BarItemIdentifier } from "@mui/x-charts";
+import { BarChart } from "@mui/x-charts";
 import { KeyboardEvent, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type HistoryItem = {
@@ -397,8 +397,8 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
             setQueryResultMonth({ hasResult: false, error: response && !response.ok && response.status !== 0 ? "Error: Status = " + response.status : String(e) });
         }
     }, []);
-    const onYearClick = useCallback((_, data: BarItemIdentifier) => {
-        if (loadingMonth) return;
+    const onYearClick = useCallback((_, data: { dataIndex: number } | null) => {
+        if (loadingMonth || data === null || typeof data.dataIndex === "undefined") return;
         const year = yearKeys![data.dataIndex];
         setLoadingMonth(true);
         setYear(parseInt(year));
@@ -454,8 +454,8 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
             setQueryResultDay({ hasResult: false, error: response && !response.ok && response.status !== 0 ? "Error: Status = " + response.status : String(e) });
         }
     }, [year]);
-    const onMonthClick = useCallback((_, data: BarItemIdentifier) => {
-        if (loadingDay) return;
+    const onMonthClick = useCallback((_, data: { dataIndex: number } | null) => {
+        if (loadingDay || data === null || typeof data.dataIndex === "undefined") return;
         const month = monthKeys![data.dataIndex];
         setLoadingDay(true);
         setMonth(parseInt(month));
@@ -539,7 +539,8 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
                     xAxis={yearXAxis!}
                     series={yearSeries!}
                     height={400}
-                    onItemClick={onYearClick} />
+                    onItemClick={onYearClick}
+                    onAxisClick={onYearClick} />
             </Box>
         ))}
         {loadingMonth && <><p ref={monthProgressRef}><CircularProgress />{" Loading monthly stats..."}</p></>}
@@ -577,7 +578,8 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
                     xAxis={monthXAxis!}
                     series={monthSeries!}
                     height={400}
-                    onItemClick={onMonthClick} />
+                    onItemClick={onMonthClick}
+                    onAxisClick={onMonthClick} />
             </Box>
         ))}
         {loadingDay && <><p ref={dayProgressRef}><CircularProgress />{" Loading daily stats..."}</p></>}
