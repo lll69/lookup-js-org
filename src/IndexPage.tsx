@@ -624,9 +624,10 @@ const Footer = memo(() => {
         <br />
         <p>The data provided may not be fully accurate or up-to-date.</p>
         <Divider />
-        <Link target="_blank" href="https://js.org/terms.html">Terms</Link>
+        {"Source Code: "}
+        <Link target="_blank" href="https://github.com/lll69/js-org-stats-generate">js-org-stats-generate</Link>
         {" | "}
-        <Link target="_blank" href="https://js.org/privacy.html">Privacy</Link>
+        <Link target="_blank" href="https://github.com/lll69/lookup-js-org">lookup-js-org</Link>
     </div>
 });
 
