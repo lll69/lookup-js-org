@@ -18,8 +18,8 @@ function headerWithCache(timestampSecond) {
 
 function getData(timeData, requestedYear, requestedMonth, requestedDay) {
     const result = {};
-    for (const item of timeData) {
-        const time = item[0];
+    for (const time of Object.keys(timeData)) {
+        if (time === "^updateTime") continue;
         const date = new Date(Math.abs(time) * 1000);
         const year = date.getUTCFullYear();
         if (year !== requestedYear) continue;
@@ -27,7 +27,7 @@ function getData(timeData, requestedYear, requestedMonth, requestedDay) {
         if (month !== requestedMonth) continue;
         const day = date.getUTCDate();
         if (day !== requestedDay) continue;
-        result[time] = item[1];
+        result[time] = timeData[time];
     }
     return result;
 }
@@ -68,7 +68,7 @@ export async function onRequestGet({ request, env, params }) {
             }), { status: 500, headers: JSON_TYPE });
         }
         const jsonData = JSON.parse(text);
-        const data = getData(jsonData.data, year, month, day);
+        const data = getData(jsonData, year, month, day);
         if (data === null) {
             return new Response(JSON.stringify({
                 code: 404,
