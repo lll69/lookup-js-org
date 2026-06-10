@@ -6,8 +6,8 @@ const JSON_WITH_CACHE = {
     "Cache-Control": "public, max-age=21600",
 };
 function headerWithCache(timestampSecond) {
-    if (typeof timestampSecond !== "number") timestampSecond = Infinity;
-    let dt = Math.round(Date.now() / 1000) - timestampSecond;
+    if (typeof timestampSecond !== "number") timestampSecond = -Infinity;
+    let dt = 86400 - (Math.round(Date.now() / 1000) - timestampSecond);
     if (dt > 86400) dt = 86400;
     if (dt < 10) dt = 10;
     return {
@@ -34,8 +34,8 @@ function getData(timeData, requestedYear, requestedMonth, requestedDay) {
 
 export async function onRequestGet({ request, env, params }) {
     const yearStr = String(params.year).trim();
-    const monthStr = String(params.year).trim();
-    const dayStr = String(params.year).trim();
+    const monthStr = String(params.monthStr).trim();
+    const dayStr = String(params.dayStr).trim();
     const year = parseInt(yearStr);
     const month = parseInt(monthStr);
     const day = parseInt(dayStr);

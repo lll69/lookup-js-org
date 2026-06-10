@@ -2,8 +2,8 @@ const JSON_TYPE = {
     "content-type": "application/json",
 };
 function headerWithCache(timestampSecond) {
-    if (typeof timestampSecond !== "number") timestampSecond = Infinity;
-    let dt = Math.round(Date.now() / 1000) - timestampSecond;
+    if (typeof timestampSecond !== "number") timestampSecond = -Infinity;
+    let dt = 86400 - (Math.round(Date.now() / 1000) - timestampSecond);
     if (dt > 86400) dt = 86400;
     if (dt < 10) dt = 10;
     return {
