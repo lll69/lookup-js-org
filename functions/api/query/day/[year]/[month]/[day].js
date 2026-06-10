@@ -34,8 +34,8 @@ function getData(timeData, requestedYear, requestedMonth, requestedDay) {
 
 export async function onRequestGet({ request, env, params }) {
     const yearStr = String(params.year).trim();
-    const monthStr = String(params.monthStr).trim();
-    const dayStr = String(params.dayStr).trim();
+    const monthStr = String(params.month).trim();
+    const dayStr = String(params.day).trim();
     const year = parseInt(yearStr);
     const month = parseInt(monthStr);
     const day = parseInt(dayStr);
@@ -45,7 +45,7 @@ export async function onRequestGet({ request, env, params }) {
             status: "INVALID_INPUT",
         }), { status: 400, headers: JSON_WITH_CACHE });
     }
-    const url = `https://api.github.com/repos/lll69/js-org-stats/contents/${year}.json?ref=stat`;
+    const url = `https://api.github.com/repos/lll69/js-org-stats/contents/year${year}.json?ref=stat`;
     try {
         const response = await fetch(url, {
             method: "GET",
