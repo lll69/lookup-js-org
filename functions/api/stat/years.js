@@ -1,10 +1,16 @@
 const JSON_TYPE = {
     "content-type": "application/json",
 };
-const JSON_WITH_CACHE = {
-    "content-type": "application/json",
-    "Cache-Control": "max-age=21600",
-};
+function headerWithCache(timestampSecond) {
+    if (typeof timestampSecond !== "number") timestampSecond = -Infinity;
+    let dt = 86400 - (Math.round(Date.now() / 1000) - timestampSecond);
+    if (dt > 86400) dt = 86400;
+    if (dt < 10) dt = 10;
+    return {
+        "content-type": "application/json",
+        "Cache-Control": "public, max-age=" + dt,
+    };
+}
 
 function convertTime(item) {
     return typeof item === "number" ? item : item[0];
@@ -65,7 +71,7 @@ export async function onRequestGet({ request, env, params }) {
             updateTime: jsonData["^updateTime"],
             data: data,
         }
-        return new Response(JSON.stringify(result), { status: 200, headers: JSON_WITH_CACHE });
+        return new Response(JSON.stringify(result), { status: 200, headers: headerWithCache(jsonData["^updateTime"]) });
     } catch (e) {
         return new Response(JSON.stringify({
             code: 500,

@@ -1,6 +1,6 @@
 import styled from "@emotion/styled";
 import { LoadingButton } from "@mui/lab";
-import { AppBar, Box, Card, Chip, CircularProgress, Container, createTheme, CssBaseline, Divider, InputAdornment, Link, Slide, TextField, ThemeProvider, Toolbar, Tooltip, Typography, useMediaQuery, useScrollTrigger } from "@mui/material";
+import { AppBar, Box, Card, Chip, CircularProgress, Container, createTheme, CssBaseline, Divider, InputAdornment, Link, Paper, Slide, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, ThemeProvider, Toolbar, Tooltip, Typography, useMediaQuery, useScrollTrigger } from "@mui/material";
 import { BarChart } from "@mui/x-charts";
 import { KeyboardEvent, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -110,9 +110,27 @@ type QueryDayResultSuccess = {
 type QueryDayResultError = QueryResultError;
 type QueryDayResult = QueryDayResultSuccess | QueryDayResultNotSuccess | QueryDayResultError;
 
+type QueryDomainResultNotSuccess = QueryResultNotSuccess;
+type QueryDomainResultSuccess = {
+    hasResult: true,
+    result: {
+        code: 200,
+        status: QueryStatus.SUCCESS,
+        updateTime: number,
+        data: {
+            "^updateTime": number,
+            [time: number]: string | string[]
+        },
+    },
+}
+type QueryDomainResultError = QueryResultError;
+type QueryDomainResult = QueryDomainResultSuccess | QueryDomainResultNotSuccess | QueryDomainResultError;
+
+const API_BASE = "";
+
 const queryStatusString = {
     [QueryStatus.SUCCESS]: "Success",
-    [QueryStatus.INVALID_INPUT]: "Invalid Domain",
+    [QueryStatus.INVALID_INPUT]: "Invalid Input",
     [QueryStatus.UPSTREAM_ERROR]: "Server Error",
     [QueryStatus.DOMAIN_NOT_FOUND]: "Domain Not Found",
     [QueryStatus.SERVER_ERROR]: "Internal Server Error",
@@ -206,7 +224,7 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
         async function asyncFetch() {
             let response: Response;
             try {
-                response = await fetch("/api/domain/" + domain, { method: "GET" });
+                response = await fetch(API_BASE + "/api/domain/" + domain, { method: "GET" });
                 const text = await response.text();
                 setQueryResult({ hasResult: true, result: JSON.parse(text) });
                 setLoading(false);
@@ -343,14 +361,19 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
     const [month, setMonth] = useState<number | null>(null);
     const [loadingDay, setLoadingDay] = useState(false);
     const [queryResultDay, setQueryResultDay] = useState<QueryDayResult | null>(null);
+    const [day, setDay] = useState<number | null>(null);
+    const [loadingDomain, setLoadingDomain] = useState(false);
+    const [queryResultDomain, setQueryResultDomain] = useState<QueryDomainResult | null>(null);
     const monthProgressRef = useRef<HTMLParagraphElement>(null);
     const monthRef = useRef<HTMLDivElement>(null);
     const dayProgressRef = useRef<HTMLParagraphElement>(null);
     const dayRef = useRef<HTMLDivElement>(null);
+    const domainProgressRef = useRef<HTMLParagraphElement>(null);
+    const domainRef = useRef<HTMLDivElement>(null);
     const asyncFetchYear = useCallback(async () => {
         let response: Response;
         try {
-            response = await fetch("/api/stat/years", { method: "GET" });
+            response = await fetch(API_BASE + "/api/stat/years", { method: "GET" });
             const text = await response.text();
             setQueryResultYear({ hasResult: true, result: JSON.parse(text) });
             setLoadingYear(false);
@@ -387,7 +410,7 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
     const asyncFetchMonth = useCallback(async (year: string) => {
         let response: Response;
         try {
-            response = await fetch("/api/stat/month/" + year, { method: "GET" });
+            response = await fetch(API_BASE + "/api/stat/month/" + year, { method: "GET" });
             const text = await response.text();
             setQueryResultMonth({ hasResult: true, result: JSON.parse(text) });
             setLoadingMonth(false);
@@ -404,6 +427,7 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
         setYear(parseInt(year));
         setQueryResultMonth(null);
         setQueryResultDay(null);
+        setQueryResultDomain(null);
         asyncFetchMonth(year);
     }, [loadingMonth, yearKeys, asyncFetchMonth]);
     const hasMonthResult = (queryResultMonth !== null && queryResultMonth.hasResult && queryResultMonth.result.status === QueryStatus.SUCCESS);
@@ -444,7 +468,7 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
     const asyncFetchDay = useCallback(async (month: string) => {
         let response: Response;
         try {
-            response = await fetch("/api/stat/day/" + year + "/" + month, { method: "GET" });
+            response = await fetch(API_BASE + "/api/stat/day/" + year + "/" + month, { method: "GET" });
             const text = await response.text();
             setQueryResultDay({ hasResult: true, result: JSON.parse(text) });
             setLoadingDay(false);
@@ -460,6 +484,7 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
         setLoadingDay(true);
         setMonth(parseInt(month));
         setQueryResultDay(null);
+        setQueryResultDomain(null);
         asyncFetchDay(month);
     }, [loadingDay, monthKeys, asyncFetchDay]);
     const hasDayResult = (queryResultDay !== null && queryResultDay.hasResult && queryResultDay.result.status === QueryStatus.SUCCESS);
@@ -497,6 +522,39 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
             }
         }
     }, [loadingDay, queryResultDay]);
+    const asyncFetchDomain = useCallback(async (day: string) => {
+        let response: Response;
+        try {
+            response = await fetch(API_BASE + "/api/query/day/" + year + "/" + month + "/" + day, { method: "GET" });
+            const text = await response.text();
+            setQueryResultDomain({ hasResult: true, result: JSON.parse(text) });
+            setLoadingDomain(false);
+        } catch (e) {
+            setLoadingDomain(false);
+            // @ts-ignore
+            setQueryResultDomain({ hasResult: false, error: response && !response.ok && response.status !== 0 ? "Error: Status = " + response.status : String(e) });
+        }
+    }, [year, month]);
+    const onDayClick = useCallback((_, data: { dataIndex: number } | null) => {
+        if (loadingDomain || data === null || typeof data.dataIndex === "undefined") return;
+        const day = dayKeys![data.dataIndex];
+        setLoadingDomain(true);
+        setDay(parseInt(day));
+        setQueryResultDomain(null);
+        asyncFetchDomain(day);
+    }, [loadingDomain, dayKeys, asyncFetchDomain]);
+    useEffect(() => {
+        if (loadingDomain) {
+            if (domainProgressRef.current !== null) {
+                domainProgressRef.current.scrollIntoView();
+            }
+        }
+        if (!loadingDomain && queryResultDomain !== null && queryResultDomain.hasResult && queryResultDomain.result.code === 200) {
+            if (domainRef.current !== null) {
+                domainRef.current.scrollIntoView({ behavior: "smooth" });
+            }
+        }
+    }, [loadingDomain, queryResultDomain]);
     return <div>
         <Divider />
         <Typography variant="h4" component="h2" sx={marginTopStyle}>
@@ -566,10 +624,10 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
             <Box ref={monthRef}>
                 <br />
                 <Typography variant="h6" component="p">
-                    <b>Monthly stats for {year}:</b>
+                    <b>Data Update Time:</b> <InlinePre>{new Date(queryResultMonth.result.updateTime * 1000).toISOString()}</InlinePre>
                 </Typography>
                 <Typography variant="h6" component="p">
-                    <b>Data Update Time:</b> <InlinePre>{new Date(queryResultMonth.result.updateTime * 1000).toISOString()}</InlinePre>
+                    <b>Monthly stats for {year}:</b>
                 </Typography>
                 <Typography variant="h6" component="p">
                     Click a month to show daily stats
@@ -605,15 +663,82 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
             <Box ref={dayRef}>
                 <br />
                 <Typography variant="h6" component="p">
+                    <b>Data Update Time:</b> <InlinePre>{new Date(queryResultDay.result.updateTime * 1000).toISOString()}</InlinePre>
+                </Typography>
+                <Typography variant="h6" component="p">
                     <b>Daily stats for {year}-{month! + 1}:</b>
                 </Typography>
                 <Typography variant="h6" component="p">
-                    <b>Data Update Time:</b> <InlinePre>{new Date(queryResultDay.result.updateTime * 1000).toISOString()}</InlinePre>
+                    Click a day to show domains
                 </Typography>
                 <BarChart
                     xAxis={dayXAxis!}
                     series={daySeries!}
-                    height={400} />
+                    height={400}
+                    onItemClick={onDayClick}
+                    onAxisClick={onDayClick} />
+            </Box>
+        ))}
+        {loadingDomain && <><p ref={domainProgressRef}><CircularProgress />{" Loading domains..."}</p></>}
+        {!loadingDomain && queryResultDomain !== null && (!queryResultDomain.hasResult ? (
+            <Box>
+                <br />
+                <InlinePre>{queryResultDomain.error}</InlinePre>
+            </Box>
+        ) : queryResultDomain.result.code !== 200 ? (
+            <Box>
+                <br />
+                <div>
+                    <InlinePre>Error: {queryStatusString[queryResultDomain.result.status]}</InlinePre>
+                </div>
+                {queryResultDomain.result.data && (
+                    <details>
+                        <ClickableSummary>Raw Data</ClickableSummary>
+                        <BlockPre>{queryResultDomain.result.data}</BlockPre>
+                    </details>
+                )}
+            </Box>
+        ) : (
+            <Box ref={dayRef}>
+                <br />
+                <Typography variant="h6" component="p">
+                    <b>Domains for {year}-{month! + 1}-{day}:</b>
+                </Typography>
+                <Typography variant="h6" component="p">
+                    <b>Data Update Time:</b> <InlinePre>{new Date(queryResultDomain.result.updateTime * 1000).toISOString()}</InlinePre>
+                </Typography>
+                <TableContainer component={Paper}>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Domain</TableCell>
+                                <TableCell>Type</TableCell>
+                                <TableCell>Time</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {Object.keys(queryResultDomain.result.data).sort((a, b) => Math.abs(a as any) - Math.abs(b as any)).map((time: any) => {
+                                if (time === "^updateTime") return undefined;
+                                time = parseInt(time);
+                                const data = queryResultDomain.result.data[time];
+                                if (typeof data === "string") {
+                                    return (<TableRow key={time}>
+                                        <TableCell>{queryResultDomain.result.data[time]}.js.org</TableCell>
+                                        <TableCell>{time < 0 ? "Remove" : "Register"}</TableCell>
+                                        <TableCell>{new Date(Math.abs(time) * 1000).toISOString()}</TableCell>
+                                    </TableRow>);
+                                } else {
+                                    const timeStr = new Date(Math.abs(time) * 1000).toISOString();
+                                    return data.map(domain => (<TableRow key={domain}>
+                                        <TableCell>{domain}.js.org</TableCell>
+                                        <TableCell>{time < 0 ? "Remove" : "Register"}</TableCell>
+                                        <TableCell>{timeStr}</TableCell>
+                                    </TableRow>));
+                                }
+                            })}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
             </Box>
         ))}
     </div>
@@ -650,7 +775,7 @@ export default function IndexPage({ P }: { P?: boolean }) {
     const darkMode = useMediaQuery("(prefers-color-scheme: dark)");
     const theme = useMemo(() => createTheme({
         palette: {
-            mode: darkMode ? "dark" : "light"
+            mode: (darkMode || P) ? "dark" : "light"
         }
     }), [darkMode]);
     return (
