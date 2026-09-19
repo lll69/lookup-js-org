@@ -4,6 +4,11 @@ export type TimeItem = number | [time: number, count: number];
 export type TimeData = TimeItem[];
 export type TimeDataResponse = { "updateTime": number, data: TimeData };
 
+const { abs, ceil, sign } = Math;
+
+const SECOND_PER_DAY = 60 * 60 * 24;
+const MS_PER_DAY = 1000 * SECOND_PER_DAY;
+
 function convertTime(item: TimeItem): number {
     return typeof item === "number" ? item : item[0];
 }
@@ -13,19 +18,19 @@ function getYear(time: number) {
 }
 
 function getYearData(timeData: TimeData): QueryYearResultData {
-    const minYear = getYear(Math.abs(convertTime(timeData[0])));
-    const maxYear = getYear(Math.abs(convertTime(timeData[timeData.length - 1])));
+    const minYear = getYear(abs(convertTime(timeData[0])));
+    const maxYear = getYear(abs(convertTime(timeData[timeData.length - 1])));
     const result = {};
     for (let i = minYear; i <= maxYear; i++) {
         result[i] = { "+": 0, "-": 0 };
     }
     for (const item of timeData) {
         if (typeof item === "number") {
-            const year = getYear(Math.abs(item));
+            const year = getYear(abs(item));
             result[year][item < 0 ? "-" : "+"]++;
         } else {
             const time = item[0];
-            const year = getYear(Math.abs(time));
+            const year = getYear(abs(time));
             result[year][time < 0 ? "-" : "+"] += item[1];
         }
     }
@@ -33,8 +38,8 @@ function getYearData(timeData: TimeData): QueryYearResultData {
 }
 
 function getMonthData(timeData: TimeData, requestedYear: number): QueryMonthResultData | null {
-    const minYear = getYear(Math.abs(convertTime(timeData[0])));
-    const maxYear = getYear(Math.abs(convertTime(timeData[timeData.length - 1])));
+    const minYear = getYear(abs(convertTime(timeData[0])));
+    const maxYear = getYear(abs(convertTime(timeData[timeData.length - 1])));
     if (requestedYear < minYear || requestedYear > maxYear) {
         return null;
     }
@@ -44,14 +49,14 @@ function getMonthData(timeData: TimeData, requestedYear: number): QueryMonthResu
     }
     for (const item of timeData) {
         if (typeof item === "number") {
-            const date = new Date(Math.abs(item) * 1000);
+            const date = new Date(abs(item) * 1000);
             const year = date.getUTCFullYear();
             if (year !== requestedYear) continue;
             const month = date.getUTCMonth();
             result[month][item < 0 ? "-" : "+"]++;
         } else {
             const time = item[0];
-            const date = new Date(Math.abs(time) * 1000);
+            const date = new Date(abs(time) * 1000);
             const year = date.getUTCFullYear();
             if (year !== requestedYear) continue;
             const month = date.getUTCMonth();
@@ -62,8 +67,8 @@ function getMonthData(timeData: TimeData, requestedYear: number): QueryMonthResu
 }
 
 function getDayData(timeData: TimeData, requestedYear: number, requestedMonth: number): QueryDayResultData | null {
-    const minYear = getYear(Math.abs(convertTime(timeData[0])));
-    const maxYear = getYear(Math.abs(convertTime(timeData[timeData.length - 1])));
+    const minYear = getYear(abs(convertTime(timeData[0])));
+    const maxYear = getYear(abs(convertTime(timeData[timeData.length - 1])));
     if (requestedYear < minYear || requestedYear > maxYear || requestedMonth < 0 || requestedMonth >= 12) {
         return null;
     }
@@ -73,7 +78,7 @@ function getDayData(timeData: TimeData, requestedYear: number, requestedMonth: n
     }
     for (const item of timeData) {
         if (typeof item === "number") {
-            const date = new Date(Math.abs(item) * 1000);
+            const date = new Date(abs(item) * 1000);
             const year = date.getUTCFullYear();
             if (year !== requestedYear) continue;
             const month = date.getUTCMonth();
@@ -82,7 +87,7 @@ function getDayData(timeData: TimeData, requestedYear: number, requestedMonth: n
             result[day][item < 0 ? "-" : "+"]++;
         } else {
             const time = item[0];
-            const date = new Date(Math.abs(time) * 1000);
+            const date = new Date(abs(time) * 1000);
             const year = date.getUTCFullYear();
             if (year !== requestedYear) continue;
             const month = date.getUTCMonth();
@@ -136,4 +141,51 @@ export function requestDayData(jsonData: TimeDataResponse, year: number, month: 
         updateTime: jsonData["updateTime"],
         data: data,
     }
+}
+
+type UtcLineData = [
+    x: number[],
+    y: number[],
+];
+
+function getUtcDayMs(timeSecond: number) {
+    return ceil(timeSecond / SECOND_PER_DAY) * SECOND_PER_DAY * 1000;
+}
+
+export function utcDayToLineData(jsonData: TimeDataResponse | null): UtcLineData {
+    if (!jsonData) {
+        return [[], []];
+    }
+    const timeData: TimeData = jsonData.data;
+    const minDayMs = getUtcDayMs(abs(convertTime(timeData[0])) - SECOND_PER_DAY);
+    const maxDayMs = getUtcDayMs(abs(convertTime(timeData[timeData.length - 1])));
+    const totalDayCount = ceil((maxDayMs - minDayMs) / MS_PER_DAY) + 1;
+    const x: number[] = Array(totalDayCount);
+    const y: number[] = Array(totalDayCount).fill(0);
+    let i: number;
+    for (i = 0; i < totalDayCount; i++) {
+        x[i] = minDayMs + i * MS_PER_DAY;
+    }
+    let currentDay = minDayMs, count = 0;
+    let dayMs: number, delta: number;
+    for (const item of timeData) {
+        if (typeof item === "number") {
+            dayMs = getUtcDayMs(abs(item));
+            delta = sign(item);
+        } else {
+            dayMs = getUtcDayMs(abs(item[0]));
+            delta = item[1] * sign(item[0]);
+        }
+        if (dayMs !== currentDay) {
+            y[(currentDay - minDayMs) / MS_PER_DAY] = count;
+            currentDay = dayMs;
+            count = 0;
+        }
+        count += delta;
+    }
+    y[(currentDay - minDayMs) / MS_PER_DAY] = count;
+    for (i = 1; i < totalDayCount; i++) {
+        y[i] += y[i - 1];
+    }
+    return [x, y];
 }

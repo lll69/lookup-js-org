@@ -1,10 +1,11 @@
 import styled from "@emotion/styled";
 import { LoadingButton } from "@mui/lab";
 import { AppBar, Box, Card, Chip, CircularProgress, Container, createTheme, CssBaseline, Divider, InputAdornment, Link, Paper, Slide, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, ThemeProvider, Toolbar, Tooltip, Typography, useMediaQuery, useScrollTrigger } from "@mui/material";
-import { BarChart } from "@mui/x-charts";
+import { BarChart, LineChart } from "@mui/x-charts";
 import { KeyboardEvent, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { requestDayData, requestMonthData, requestYearData, TimeDataResponse } from "./utils";
+import { requestDayData, requestMonthData, requestYearData, TimeDataResponse, utcDayToLineData } from "./utils";
 import { QueryDayResult, QueryDayResultSuccessResult, QueryMonthResult, QueryMonthResultSuccessResult, QueryResult, QueryResultError, QueryResultNotSuccess, QueryResultNotSuccessResult, QueryResultSuccess, QueryStatus, QueryYearResult } from "./types";
+import { AxisValueFormatterContext } from "@mui/x-charts/internals";
 
 type QueryDomainResultNotSuccess = QueryResultNotSuccess;
 type QueryDomainResultSuccess = {
@@ -117,7 +118,12 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
             return;
         }
         setLoading(true);
-        const domain = domainInputRef.current!.value;
+        let domain = domainInputRef.current!.value;
+        const suffix = ".js.org";
+        if (domain.endsWith(suffix)) {
+            domain = domain.substring(0, domain.length - suffix.length);
+            domainInputRef.current!.value = domain;
+        }
         async function asyncFetch() {
             let response: Response;
             try {
@@ -247,6 +253,41 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
             </Box>
         ))}
     </div>
+});
+
+const TimePart = memo(({ timeData }: { timeData: TimeDataResponse | null }) => {
+    const [xData, yData] = useMemo(() => utcDayToLineData(timeData), [timeData]);
+
+    const xFormatter = useCallback((value: number, ctx: AxisValueFormatterContext) => {
+        const date = new Date(value);
+        if (ctx.location === "tick") {
+            return date.getUTCFullYear() + "-" + (date.getUTCMonth() + 1);
+        } else {
+            return date.getUTCFullYear() + "-" + (date.getUTCMonth() + 1) + "-" + date.getUTCDate();
+        }
+    }, []);
+    return (<Box>
+        <br />
+        {timeData ? (
+            <LineChart
+                xAxis={[{
+                    scaleType: "linear",
+                    data: xData,
+                    valueFormatter: xFormatter,
+                }]}
+                series={[{
+                    label: "Total Subdomains",
+                    type: "line",
+                    data: yData,
+                    disableHighlight: true,
+                    showMark: false,
+                    curve: "linear",
+                }]}
+                height={400}
+                disableLineItemHighlight
+                skipAnimation />
+        ) : undefined}
+    </Box>);
 });
 
 const StatPart = memo(({ P }: { P?: boolean }) => {
@@ -509,8 +550,9 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
                 <Typography variant="h6" component="p">
                     <b>Data Update Time:</b> <InlinePre>{new Date(queryResultYear.result.updateTime * 1000).toISOString()}</InlinePre>
                 </Typography>
+                <TimePart timeData={timeData} />
                 <Typography variant="h6" component="p">
-                    Click a year to show monthly stats
+                    Click a year below to show monthly stats
                 </Typography>
                 <BarChart
                     xAxis={yearXAxis!}
