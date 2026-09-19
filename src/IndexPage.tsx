@@ -332,7 +332,7 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
             // @ts-ignore
             setQueryResultMonth({ hasResult: false, error: response && !response.ok && response.status !== 0 ? "Error: Status = " + response.status : String(e) });
         }
-    }, []);
+    }, [timeData]);
     const onYearClick = useCallback((_, data: { dataIndex: number } | null) => {
         if (loadingMonth || data === null || typeof data.dataIndex === "undefined") return;
         const year = yearKeys![data.dataIndex];
@@ -396,7 +396,7 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
             // @ts-ignore
             setQueryResultDay({ hasResult: false, error: response && !response.ok && response.status !== 0 ? "Error: Status = " + response.status : String(e) });
         }
-    }, [year]);
+    }, [year, timeData]);
     const onMonthClick = useCallback((_, data: { dataIndex: number } | null) => {
         if (loadingDay || data === null || typeof data.dataIndex === "undefined") return;
         const month = monthKeys![data.dataIndex];
