@@ -447,12 +447,15 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
         setQueryResultDomain(null);
         asyncFetchDay(month);
     }, [loadingDay, monthKeys, asyncFetchDay]);
+    const dayFormatter = useCallback((value: string, ctx: AxisValueFormatterContext) => {
+        return ctx.location === "tick" ? value : year + "-" + (month! + 1) + "-" + value;
+    }, [year, month]);
     const hasDayResult = (queryResultDay !== null && queryResultDay.hasResult && queryResultDay.result.status === QueryStatus.SUCCESS);
     const dayKeys = useMemo(() => (
         hasDayResult ? Object.keys(queryResultDay.result.data).filter(day => queryResultDay.result.data[day]["+"] + queryResultDay.result.data[day]["-"] > 0) : null
     ), [queryResultDay]);
     const dayXAxis = useMemo(() => (
-        hasDayResult ? [{ scaleType: "band" as "band", data: dayKeys! }] : null
+        hasDayResult ? [{ scaleType: "band" as "band", data: dayKeys!, valueFormatter: dayFormatter }] : null
     ), [queryResultDay]);
     const daySeries = useMemo(() => (
         hasDayResult ? [
