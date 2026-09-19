@@ -274,7 +274,8 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
             if (USE_TIMES_API) {
                 response = await fetch(API_BASE + "/api/stat/times", { method: "GET" });
                 const text = await response.text();
-                setTimeData(JSON.parse(text));
+                const timeData = JSON.parse(text);
+                setTimeData(timeData);
                 setQueryResultYear({ hasResult: true, result: requestYearData(timeData!) });
                 setLoadingYear(false);
             } else {
