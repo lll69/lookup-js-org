@@ -2,7 +2,7 @@ import { QueryDayResultData, QueryDayResultSuccessResult, QueryMonthResultData, 
 
 export type TimeItem = number | [time: number, count: number];
 export type TimeData = TimeItem[];
-export type TimeDataResponse = { "^updateTime": number, data: TimeData };
+export type TimeDataResponse = { "updateTime": number, data: TimeData };
 
 function convertTime(item: TimeItem): number {
     return typeof item === "number" ? item : item[0];
@@ -99,7 +99,7 @@ export function requestYearData(jsonData: TimeDataResponse): QueryYearResultSucc
     return {
         code: 200,
         status: QueryStatus.SUCCESS,
-        updateTime: jsonData["^updateTime"],
+        updateTime: jsonData["updateTime"],
         data: data,
     };
 }
@@ -110,13 +110,13 @@ export function requestMonthData(jsonData: TimeDataResponse, year: number): Quer
         return {
             code: 404,
             status: QueryStatus.YEAR_NOT_FOUND,
-            updateTime: jsonData["^updateTime"],
+            updateTime: jsonData["updateTime"],
         };
     }
     return {
         code: 200,
         status: QueryStatus.SUCCESS,
-        updateTime: jsonData["^updateTime"],
+        updateTime: jsonData["updateTime"],
         data: data,
     }
 }
@@ -127,13 +127,13 @@ export function requestDayData(jsonData: TimeDataResponse, year: number, month: 
         return {
             code: 404,
             status: QueryStatus.YEAR_NOT_FOUND,
-            updateTime: jsonData["^updateTime"],
+            updateTime: jsonData["updateTime"],
         };
     }
     return {
         code: 200,
         status: QueryStatus.SUCCESS,
-        updateTime: jsonData["^updateTime"],
+        updateTime: jsonData["updateTime"],
         data: data,
     }
 }
