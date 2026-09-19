@@ -1,114 +1,11 @@
 import styled from "@emotion/styled";
 import { LoadingButton } from "@mui/lab";
 import { AppBar, Box, Card, Chip, CircularProgress, Container, createTheme, CssBaseline, Divider, InputAdornment, Link, Paper, Slide, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, ThemeProvider, Toolbar, Tooltip, Typography, useMediaQuery, useScrollTrigger } from "@mui/material";
-import { BarChart } from "@mui/x-charts";
+import { BarChart, LineChart } from "@mui/x-charts";
 import { KeyboardEvent, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-type HistoryItem = {
-    time: number,
-    type: "cname" | "ns" | "remove",
-    server: string | string[] | null,
-    comment: string | null,
-    commit: string,
-    pull: number | null,
-}
-type PullInfoItem = {
-    username: string,
-    labels: {
-        name: string,
-        description: string,
-    }[],
-}
-const enum QueryStatus {
-    SUCCESS = "SUCCESS",
-    INVALID_INPUT = "INVALID_INPUT",
-    UPSTREAM_ERROR = "UPSTREAM_ERROR",
-    DOMAIN_NOT_FOUND = "DOMAIN_NOT_FOUND",
-    SERVER_ERROR = "SERVER_ERROR",
-    YEAR_NOT_FOUND = "YEAR_NOT_FOUND",
-}
-type QueryResultNotSuccess = {
-    hasResult: true,
-    result: {
-        code: 400 | 404 | 500,
-        status: QueryStatus,
-        upstreamCode?: number,
-        updateTime?: number,
-        data?: any,
-    },
-}
-type QueryResultSuccess = {
-    hasResult: true,
-    result: {
-        code: 200,
-        status: QueryStatus.SUCCESS,
-        updateTime: number,
-        name: string,
-        history: HistoryItem[],
-        pullInfo: {
-            [pull: string]: PullInfoItem
-        },
-    },
-}
-type QueryResultError = {
-    hasResult: false,
-    error: string,
-}
-type QueryResult = QueryResultSuccess | QueryResultNotSuccess | QueryResultError;
-
-type QueryYearResultNotSuccess = QueryResultNotSuccess;
-type QueryYearResultSuccess = {
-    hasResult: true,
-    result: {
-        code: 200,
-        status: QueryStatus.SUCCESS,
-        updateTime: number,
-        data: {
-            [year: string]: {
-                "+": number,
-                "-": number,
-            }
-        },
-    },
-}
-type QueryYearResultError = QueryResultError;
-type QueryYearResult = QueryYearResultSuccess | QueryYearResultNotSuccess | QueryYearResultError;
-
-type QueryMonthResultNotSuccess = QueryResultNotSuccess;
-type QueryMonthResultSuccess = {
-    hasResult: true,
-    result: {
-        code: 200,
-        status: QueryStatus.SUCCESS,
-        updateTime: number,
-        data: {
-            [month: string]: {
-                "+": number,
-                "-": number,
-            }
-        },
-    },
-}
-type QueryMonthResultError = QueryResultError;
-type QueryMonthResult = QueryMonthResultSuccess | QueryMonthResultNotSuccess | QueryMonthResultError;
-
-type QueryDayResultNotSuccess = QueryResultNotSuccess;
-type QueryDayResultSuccess = {
-    hasResult: true,
-    result: {
-        code: 200,
-        status: QueryStatus.SUCCESS,
-        updateTime: number,
-        data: {
-            [day: string]: {
-                "+": number,
-                "-": number,
-            }
-        },
-    },
-}
-type QueryDayResultError = QueryResultError;
-type QueryDayResult = QueryDayResultSuccess | QueryDayResultNotSuccess | QueryDayResultError;
+import { requestDayData, requestMonthData, requestYearData, TimeDataResponse, utcDayToLineData } from "./utils";
+import { QueryDayResult, QueryDayResultSuccessResult, QueryMonthResult, QueryMonthResultSuccessResult, QueryResult, QueryResultError, QueryResultNotSuccess, QueryResultNotSuccessResult, QueryResultSuccess, QueryStatus, QueryYearResult } from "./types";
+import { AxisValueFormatterContext } from "@mui/x-charts/internals";
 
 type QueryDomainResultNotSuccess = QueryResultNotSuccess;
 type QueryDomainResultSuccess = {
@@ -127,6 +24,7 @@ type QueryDomainResultError = QueryResultError;
 type QueryDomainResult = QueryDomainResultSuccess | QueryDomainResultNotSuccess | QueryDomainResultError;
 
 const API_BASE = "";
+const USE_TIMES_API = true;
 
 const queryStatusString = {
     [QueryStatus.SUCCESS]: "Success",
@@ -220,7 +118,12 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
             return;
         }
         setLoading(true);
-        const domain = domainInputRef.current!.value;
+        let domain = domainInputRef.current!.value;
+        const suffix = ".js.org";
+        if (domain.endsWith(suffix)) {
+            domain = domain.substring(0, domain.length - suffix.length);
+            domainInputRef.current!.value = domain;
+        }
         async function asyncFetch() {
             let response: Response;
             try {
@@ -352,7 +255,43 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
     </div>
 });
 
+const TimePart = memo(({ timeData }: { timeData: TimeDataResponse | null }) => {
+    const [xData, yData] = useMemo(() => utcDayToLineData(timeData), [timeData]);
+
+    const xFormatter = useCallback((value: number, ctx: AxisValueFormatterContext) => {
+        const date = new Date(value);
+        if (ctx.location === "tick") {
+            return date.getUTCFullYear() + "-" + (date.getUTCMonth() + 1);
+        } else {
+            return date.getUTCFullYear() + "-" + (date.getUTCMonth() + 1) + "-" + date.getUTCDate();
+        }
+    }, []);
+    return (<Box>
+        <br />
+        {timeData ? (
+            <LineChart
+                xAxis={[{
+                    scaleType: "linear",
+                    data: xData,
+                    valueFormatter: xFormatter,
+                }]}
+                series={[{
+                    label: "Total Subdomains",
+                    type: "line",
+                    data: yData,
+                    disableHighlight: true,
+                    showMark: false,
+                    curve: "linear",
+                }]}
+                height={400}
+                disableLineItemHighlight
+                skipAnimation />
+        ) : undefined}
+    </Box>);
+});
+
 const StatPart = memo(({ P }: { P?: boolean }) => {
+    const [timeData, setTimeData] = useState<TimeDataResponse | null>(null);
     const [loadingYear, setLoadingYear] = useState(true);
     const [queryResultYear, setQueryResultYear] = useState<QueryYearResult | null>(null);
     const [year, setYear] = useState<number | null>(null);
@@ -373,10 +312,19 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
     const asyncFetchYear = useCallback(async () => {
         let response: Response;
         try {
-            response = await fetch(API_BASE + "/api/stat/years", { method: "GET" });
-            const text = await response.text();
-            setQueryResultYear({ hasResult: true, result: JSON.parse(text) });
-            setLoadingYear(false);
+            if (USE_TIMES_API) {
+                response = await fetch(API_BASE + "/api/stat/times", { method: "GET" });
+                const text = await response.text();
+                const timeData = JSON.parse(text);
+                setTimeData(timeData);
+                setQueryResultYear({ hasResult: true, result: requestYearData(timeData!) });
+                setLoadingYear(false);
+            } else {
+                response = await fetch(API_BASE + "/api/stat/years", { method: "GET" });
+                const text = await response.text();
+                setQueryResultYear({ hasResult: true, result: JSON.parse(text) });
+                setLoadingYear(false);
+            }
         } catch (e) {
             setLoadingYear(false);
             // @ts-ignore
@@ -410,16 +358,22 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
     const asyncFetchMonth = useCallback(async (year: string) => {
         let response: Response;
         try {
-            response = await fetch(API_BASE + "/api/stat/month/" + year, { method: "GET" });
-            const text = await response.text();
-            setQueryResultMonth({ hasResult: true, result: JSON.parse(text) });
-            setLoadingMonth(false);
+            if (USE_TIMES_API) {
+                setQueryResultMonth({ hasResult: true, result: requestMonthData(timeData!, parseInt(year)) } as
+                    ({ hasResult: true, result: QueryMonthResultSuccessResult } | { hasResult: true, result: QueryResultNotSuccessResult }));
+                setLoadingMonth(false);
+            } else {
+                response = await fetch(API_BASE + "/api/stat/month/" + year, { method: "GET" });
+                const text = await response.text();
+                setQueryResultMonth({ hasResult: true, result: JSON.parse(text) });
+                setLoadingMonth(false);
+            }
         } catch (e) {
             setLoadingMonth(false);
             // @ts-ignore
             setQueryResultMonth({ hasResult: false, error: response && !response.ok && response.status !== 0 ? "Error: Status = " + response.status : String(e) });
         }
-    }, []);
+    }, [timeData]);
     const onYearClick = useCallback((_, data: { dataIndex: number } | null) => {
         if (loadingMonth || data === null || typeof data.dataIndex === "undefined") return;
         const year = yearKeys![data.dataIndex];
@@ -468,16 +422,22 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
     const asyncFetchDay = useCallback(async (month: string) => {
         let response: Response;
         try {
-            response = await fetch(API_BASE + "/api/stat/day/" + year + "/" + month, { method: "GET" });
-            const text = await response.text();
-            setQueryResultDay({ hasResult: true, result: JSON.parse(text) });
-            setLoadingDay(false);
+            if (USE_TIMES_API) {
+                setQueryResultDay({ hasResult: true, result: requestDayData(timeData!, year!, parseInt(month)) } as
+                    ({ hasResult: true, result: QueryDayResultSuccessResult } | { hasResult: true, result: QueryResultNotSuccessResult }));
+                setLoadingDay(false);
+            } else {
+                response = await fetch(API_BASE + "/api/stat/day/" + year + "/" + month, { method: "GET" });
+                const text = await response.text();
+                setQueryResultDay({ hasResult: true, result: JSON.parse(text) });
+                setLoadingDay(false);
+            }
         } catch (e) {
             setLoadingDay(false);
             // @ts-ignore
             setQueryResultDay({ hasResult: false, error: response && !response.ok && response.status !== 0 ? "Error: Status = " + response.status : String(e) });
         }
-    }, [year]);
+    }, [year, timeData]);
     const onMonthClick = useCallback((_, data: { dataIndex: number } | null) => {
         if (loadingDay || data === null || typeof data.dataIndex === "undefined") return;
         const month = monthKeys![data.dataIndex];
@@ -487,12 +447,15 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
         setQueryResultDomain(null);
         asyncFetchDay(month);
     }, [loadingDay, monthKeys, asyncFetchDay]);
+    const dayFormatter = useCallback((value: string, ctx: AxisValueFormatterContext) => {
+        return ctx.location === "tick" ? value : year + "-" + (month! + 1) + "-" + value;
+    }, [year, month]);
     const hasDayResult = (queryResultDay !== null && queryResultDay.hasResult && queryResultDay.result.status === QueryStatus.SUCCESS);
     const dayKeys = useMemo(() => (
         hasDayResult ? Object.keys(queryResultDay.result.data).filter(day => queryResultDay.result.data[day]["+"] + queryResultDay.result.data[day]["-"] > 0) : null
     ), [queryResultDay]);
     const dayXAxis = useMemo(() => (
-        hasDayResult ? [{ scaleType: "band" as "band", data: dayKeys! }] : null
+        hasDayResult ? [{ scaleType: "band" as "band", data: dayKeys!, valueFormatter: dayFormatter }] : null
     ), [queryResultDay]);
     const daySeries = useMemo(() => (
         hasDayResult ? [
@@ -590,8 +553,9 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
                 <Typography variant="h6" component="p">
                     <b>Data Update Time:</b> <InlinePre>{new Date(queryResultYear.result.updateTime * 1000).toISOString()}</InlinePre>
                 </Typography>
+                <TimePart timeData={timeData} />
                 <Typography variant="h6" component="p">
-                    Click a year to show monthly stats
+                    Click a year below to show monthly stats
                 </Typography>
                 <BarChart
                     xAxis={yearXAxis!}
