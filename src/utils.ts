@@ -187,7 +187,5 @@ export function utcDayToLineData(jsonData: TimeDataResponse | null): UtcLineData
     for (i = 1; i < totalDayCount; i++) {
         y[i] += y[i - 1];
     }
-    x.length--;
-    y.length--;
     return [x, y];
 }
