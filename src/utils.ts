@@ -4,7 +4,7 @@ export type TimeItem = number | [time: number, count: number];
 export type TimeData = TimeItem[];
 export type TimeDataResponse = { "updateTime": number, data: TimeData };
 
-const { abs, ceil, sign } = Math;
+const { abs, floor, sign } = Math;
 
 const SECOND_PER_DAY = 60 * 60 * 24;
 const MS_PER_DAY = 1000 * SECOND_PER_DAY;
@@ -149,7 +149,7 @@ type UtcLineData = [
 ];
 
 function getUtcDayMs(timeSecond: number) {
-    return ceil(timeSecond / SECOND_PER_DAY) * SECOND_PER_DAY * 1000;
+    return floor(timeSecond / SECOND_PER_DAY) * SECOND_PER_DAY * 1000;
 }
 
 export function utcDayToLineData(jsonData: TimeDataResponse | null): UtcLineData {
@@ -157,9 +157,9 @@ export function utcDayToLineData(jsonData: TimeDataResponse | null): UtcLineData
         return [[], []];
     }
     const timeData: TimeData = jsonData.data;
-    const minDayMs = getUtcDayMs(abs(convertTime(timeData[0])) - SECOND_PER_DAY);
+    const minDayMs = getUtcDayMs(abs(convertTime(timeData[0]))) - MS_PER_DAY;
     const maxDayMs = getUtcDayMs(abs(convertTime(timeData[timeData.length - 1])));
-    const totalDayCount = ceil((maxDayMs - minDayMs) / MS_PER_DAY) + 1;
+    const totalDayCount = ((maxDayMs - minDayMs) / MS_PER_DAY) + 1;
     const x: number[] = Array(totalDayCount);
     const y: number[] = Array(totalDayCount).fill(0);
     let i: number;
@@ -187,5 +187,7 @@ export function utcDayToLineData(jsonData: TimeDataResponse | null): UtcLineData
     for (i = 1; i < totalDayCount; i++) {
         y[i] += y[i - 1];
     }
+    x.length--;
+    y.length--;
     return [x, y];
 }
