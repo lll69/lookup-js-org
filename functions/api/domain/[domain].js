@@ -49,6 +49,7 @@ async function fillPullInfo(domainData, env) {
             const jsonData = JSON.parse(text);
             const info = {
                 username: jsonData.user.login,
+                userId: jsonData.user.id,
                 labels: jsonData.labels.map(item => ({ name: item.name, description: item.description }))
             };
             prInfo[pr] = info;
