@@ -117,7 +117,6 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
             domainInputRef.current!.focus();
             return;
         }
-        setLoading(true);
         let domain = domainInputRef.current!.value;
         const suffix = ".js.org";
         if (domain.endsWith(suffix)) {
@@ -128,6 +127,7 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
                 return;
             }
         }
+        setLoading(true);
         async function asyncFetch() {
             let response: Response;
             try {
