@@ -212,7 +212,7 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
                         {historyItem.pull !== null && <>
                             {(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull] && (
                                 <Typography variant="body2" component="div">
-                                    <b>User:</b> <Link target="_blank" href={"https://github.com/" + (queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}><InlinePre>{(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}</InlinePre></Link>
+                                    <b>User:</b> <Link target="_blank" href={"https://github.com/" + (queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}><InlinePre>{(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}</InlinePre> (UserID: <InlinePre>{(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].userId}</InlinePre>)</Link>
                                 </Typography>
                             )}
                             <Typography variant="body2" component="div">
@@ -228,7 +228,7 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
                             </Typography>
                             {historyItem.comment !== null && (
                                 <Typography variant="body2" component="div">
-                                    <b>Comment:</b> <InlinePre>{"// " + historyItem.comment}</InlinePre>
+                                    <b>Comment:</b> <InlinePre>{historyItem.comment}</InlinePre>
                                 </Typography>
                             )}
                         </>) : (
