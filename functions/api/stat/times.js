@@ -14,34 +14,64 @@ function headerWithCache(timestampSecond) {
 
 export async function onRequestGet({ request, env, params }) {
     const url = "https://api.github.com/repos/lll69/js-org-stats/contents/times.json?ref=stat";
+    const urlMonthlyStats = "https://api.github.com/repos/lll69/js-org-stats/contents/monthly_stats.json?ref=stat";
     try {
-        const response = await fetch(url, {
-            method: "GET",
-            headers: {
-                "Accept": "application/vnd.github.raw+json",
-                "Authorization": "Bearer " + env.GITHUB_TOKEN,
-                "User-Agent": "LookupJsOrg",
-            },
-            cf: {
-                cacheTtl: 21600,
-                cacheEverything: true,
+        let jsonData;
+        let jsonDataMonthlyStats;
+        {
+            const response = await fetch(url, {
+                method: "GET",
+                headers: {
+                    "Accept": "application/vnd.github.raw+json",
+                    "Authorization": "Bearer " + env.GITHUB_TOKEN,
+                    "User-Agent": "LookupJsOrg",
+                },
+                cf: {
+                    cacheTtl: 21600,
+                    cacheEverything: true,
+                }
+            });
+            const text = await response.text();
+            if (!response.ok) {
+                return new Response(JSON.stringify({
+                    code: 500,
+                    status: "UPSTREAM_ERROR",
+                    upstreamCode: response.status,
+                }), { status: 500, headers: JSON_TYPE });
             }
-        });
-        const text = await response.text();
-        if (!response.ok) {
-            return new Response(JSON.stringify({
-                code: 500,
-                status: "UPSTREAM_ERROR",
-                upstreamCode: response.status,
-            }), { status: 500, headers: JSON_TYPE });
+            jsonData = JSON.parse(text);
         }
-        const jsonData = JSON.parse(text);
-        const data = jsonData.data;
+        {
+            const response = await fetch(urlMonthlyStats, {
+                method: "GET",
+                headers: {
+                    "Accept": "application/vnd.github.raw+json",
+                    "Authorization": "Bearer " + env.GITHUB_TOKEN,
+                    "User-Agent": "LookupJsOrg",
+                },
+                cf: {
+                    cacheTtl: 21600,
+                    cacheEverything: true,
+                }
+            });
+            const text = await response.text();
+            if (!response.ok) {
+                return new Response(JSON.stringify({
+                    code: 500,
+                    status: "UPSTREAM_ERROR",
+                    upstreamCode: response.status,
+                }), { status: 500, headers: JSON_TYPE });
+            }
+            jsonDataMonthlyStats = JSON.parse(text);
+        }
+        delete jsonDataMonthlyStats["^updateTime"];
         const result = {
             code: 200,
             status: "SUCCESS",
             updateTime: jsonData["^updateTime"],
-            data: data,
+            data: jsonData.data,
+            prData: jsonData.prData,
+            monthly: jsonDataMonthlyStats,
         }
         return new Response(JSON.stringify(result), { status: 200, headers: headerWithCache(jsonData["^updateTime"]) });
     } catch (e) {
