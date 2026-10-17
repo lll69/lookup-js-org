@@ -56,7 +56,7 @@ const CenterFlexBox = styled(Box)({
     alignItems: "center",
 });
 
-const domainPattern = /^(?:[a-z0-9_\-\.]+)$/;
+const domainPattern = /^(?:[A-Za-z0-9_\-\.]+)$/;
 
 const inputProps = {
     pattern: "^(?:[a-z0-9_\\-\\.]+)$",
@@ -118,6 +118,15 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
             return;
         }
         let domain = domainInputRef.current!.value;
+        let lowerDomain = domain.toLocaleLowerCase("en");
+        if (lowerDomain !== domain) {
+            domainInputRef.current!.value = lowerDomain;
+            domain = lowerDomain;
+            if (!validateInput()) {
+                domainInputRef.current!.focus();
+                return;
+            }
+        }
         const suffix = ".js.org";
         if (domain.endsWith(suffix)) {
             domain = domain.substring(0, domain.length - suffix.length);
