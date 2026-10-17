@@ -2,7 +2,7 @@ import { QueryDayResultData, QueryDayResultSuccessResult, QueryMonthResultData, 
 
 export type TimeItem = number | [time: number, count: number];
 export type TimeData = TimeItem[];
-export type TimeDataResponse = { "updateTime": number, data: TimeData };
+export type TimeDataResponse = { "updateTime": number, data: TimeData, prData: TimeData };
 
 const { abs, floor, sign } = Math;
 
@@ -146,6 +146,7 @@ export function requestDayData(jsonData: TimeDataResponse, year: number, month: 
 type UtcLineData = [
     x: number[],
     y: number[],
+    yPR: number[],
 ];
 
 function getUtcDayMs(timeSecond: number) {
@@ -154,14 +155,16 @@ function getUtcDayMs(timeSecond: number) {
 
 export function utcDayToLineData(jsonData: TimeDataResponse | null): UtcLineData {
     if (!jsonData) {
-        return [[], []];
+        return [[], [], []];
     }
     const timeData: TimeData = jsonData.data;
-    const minDayMs = getUtcDayMs(abs(convertTime(timeData[0]))) - MS_PER_DAY;
-    const maxDayMs = getUtcDayMs(abs(convertTime(timeData[timeData.length - 1])));
+    const prTimeData: TimeData = jsonData.prData;
+    const minDayMs = getUtcDayMs(Math.min(abs(convertTime(timeData[0])), abs(convertTime(prTimeData[0])))) - MS_PER_DAY;
+    const maxDayMs = getUtcDayMs(Math.max(abs(convertTime(timeData[timeData.length - 1])), abs(convertTime(prTimeData[prTimeData.length - 1]))));
     const totalDayCount = ((maxDayMs - minDayMs) / MS_PER_DAY) + 1;
     const x: number[] = Array(totalDayCount);
     const y: number[] = Array(totalDayCount).fill(0);
+    const yPR: number[] = Array(totalDayCount).fill(0);
     let i: number;
     for (i = 0; i < totalDayCount; i++) {
         x[i] = minDayMs + i * MS_PER_DAY;
@@ -187,5 +190,25 @@ export function utcDayToLineData(jsonData: TimeDataResponse | null): UtcLineData
     for (i = 1; i < totalDayCount; i++) {
         y[i] += y[i - 1];
     }
-    return [x, y];
+    currentDay = minDayMs, count = 0;
+    for (const item of prTimeData) {
+        if (typeof item === "number") {
+            dayMs = getUtcDayMs(abs(item));
+            delta = sign(item);
+        } else {
+            dayMs = getUtcDayMs(abs(item[0]));
+            delta = item[1] * sign(item[0]);
+        }
+        if (dayMs !== currentDay) {
+            yPR[(currentDay - minDayMs) / MS_PER_DAY] = count;
+            currentDay = dayMs;
+            count = 0;
+        }
+        count += delta;
+    }
+    yPR[(currentDay - minDayMs) / MS_PER_DAY] = count;
+    for (i = 1; i < totalDayCount; i++) {
+        yPR[i] += yPR[i - 1];
+    }
+    return [x, y, yPR];
 }

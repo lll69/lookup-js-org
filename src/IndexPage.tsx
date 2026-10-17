@@ -269,7 +269,7 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
 });
 
 const TimePart = memo(({ timeData }: { timeData: TimeDataResponse | null }) => {
-    const [xData, yData] = useMemo(() => utcDayToLineData(timeData), [timeData]);
+    const [xData, yData, yPrData] = useMemo(() => utcDayToLineData(timeData), [timeData]);
 
     const xFormatter = useCallback((value: number, ctx: AxisValueFormatterContext) => {
         const date = new Date(value);
@@ -288,14 +288,24 @@ const TimePart = memo(({ timeData }: { timeData: TimeDataResponse | null }) => {
                     data: xData,
                     valueFormatter: xFormatter,
                 }]}
-                series={[{
-                    label: "Total Subdomains",
-                    type: "line",
-                    data: yData,
-                    disableHighlight: true,
-                    showMark: false,
-                    curve: "linear",
-                }]}
+                series={[
+                    {
+                        label: "Total Subdomains",
+                        type: "line",
+                        data: yData,
+                        disableHighlight: true,
+                        showMark: false,
+                        curve: "linear",
+                    },
+                    {
+                        label: "Total PRs",
+                        type: "line",
+                        data: yPrData,
+                        disableHighlight: true,
+                        showMark: false,
+                        curve: "linear",
+                    },
+                ]}
                 height={400}
                 disableLineItemHighlight
                 skipAnimation />
