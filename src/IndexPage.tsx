@@ -290,7 +290,7 @@ const TimePart = memo(({ timeData }: { timeData: TimeDataResponse | null }) => {
                 }]}
                 series={[
                     {
-                        label: "Total Subdomains",
+                        label: "Live Subdomains",
                         type: "line",
                         data: yData,
                         disableHighlight: true,
