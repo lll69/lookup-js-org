@@ -36,12 +36,12 @@ export async function onRequestGet({ request, env, params }) {
             }), { status: 500, headers: JSON_TYPE });
         }
         const jsonData = JSON.parse(text);
-        const data = jsonData.data;
         const result = {
             code: 200,
             status: "SUCCESS",
             updateTime: jsonData["^updateTime"],
-            data: data,
+            data: jsonData.data,
+            prData: jsonData.prData,
         }
         return new Response(JSON.stringify(result), { status: 200, headers: headerWithCache(jsonData["^updateTime"]) });
     } catch (e) {
