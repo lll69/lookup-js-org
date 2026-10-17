@@ -123,6 +123,10 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
         if (domain.endsWith(suffix)) {
             domain = domain.substring(0, domain.length - suffix.length);
             domainInputRef.current!.value = domain;
+            if (!validateInput()) {
+                domainInputRef.current!.focus();
+                return;
+            }
         }
         async function asyncFetch() {
             let response: Response;
