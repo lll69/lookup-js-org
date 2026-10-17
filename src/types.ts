@@ -17,6 +17,7 @@ export type HistoryItem = {
 }
 export type PullInfoItem = {
     username: string,
+    userId: number,
     labels: {
         name: string,
         description: string,
