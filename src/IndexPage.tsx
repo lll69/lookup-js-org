@@ -56,7 +56,7 @@ const CenterFlexBox = styled(Box)({
     alignItems: "center",
 });
 
-const domainPattern = /^(?:[a-z0-9_\-\.]+)$/;
+const domainPattern = /^(?:[A-Za-z0-9_\-\.]+)$/;
 
 const inputProps = {
     pattern: "^(?:[a-z0-9_\\-\\.]+)$",
@@ -117,8 +117,16 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
             domainInputRef.current!.focus();
             return;
         }
-        setLoading(true);
         let domain = domainInputRef.current!.value;
+        let lowerDomain = domain.toLocaleLowerCase("en");
+        if (lowerDomain !== domain) {
+            domainInputRef.current!.value = lowerDomain;
+            domain = lowerDomain;
+            if (!validateInput()) {
+                domainInputRef.current!.focus();
+                return;
+            }
+        }
         const suffix = ".js.org";
         if (domain.endsWith(suffix)) {
             domain = domain.substring(0, domain.length - suffix.length);
@@ -128,6 +136,7 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
                 return;
             }
         }
+        setLoading(true);
         async function asyncFetch() {
             let response: Response;
             try {
@@ -216,7 +225,7 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
                         {historyItem.pull !== null && <>
                             {(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull] && (
                                 <Typography variant="body2" component="div">
-                                    <b>User:</b> <Link target="_blank" href={"https://github.com/" + (queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}><InlinePre>{(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}</InlinePre> (UserID: <InlinePre>{(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].userId}</InlinePre>)</Link>
+                                    <b>User:</b> <Link target="_blank" href={"https://github.com/" + (queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}><InlinePre>{(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].username}</InlinePre></Link> (UserID: <InlinePre>{(queryResult as QueryResultSuccess).result.pullInfo[historyItem.pull].userId}</InlinePre>)
                                 </Typography>
                             )}
                             <Typography variant="body2" component="div">
