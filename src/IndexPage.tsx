@@ -3,9 +3,9 @@ import { LoadingButton } from "@mui/lab";
 import { AppBar, Box, Card, Chip, CircularProgress, Container, createTheme, CssBaseline, Divider, InputAdornment, Link, Paper, Slide, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, ThemeProvider, Toolbar, Tooltip, Typography, useMediaQuery, useScrollTrigger } from "@mui/material";
 import { BarChart, LineChart } from "@mui/x-charts";
 import { KeyboardEvent, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { requestDayData, requestMonthData, requestYearData, TimeDataResponse, utcDayToLineData } from "./utils";
+import { fillDataWithSpecialDays, requestDayData, requestMonthData, requestYearData, TimeDataResponse, utcDayToLineData } from "./utils";
 import { QueryDayResult, QueryDayResultSuccessResult, QueryMonthResult, QueryMonthResultSuccessResult, QueryResult, QueryResultError, QueryResultNotSuccess, QueryResultNotSuccessResult, QueryResultSuccess, QueryStatus, QueryYearResult } from "./types";
-import { AxisValueFormatterContext } from "@mui/x-charts/internals";
+import { AxisValueFormatterContext, SeriesValueFormatterContext } from "@mui/x-charts/internals";
 
 type QueryDomainResultNotSuccess = QueryResultNotSuccess;
 type QueryDomainResultSuccess = {
@@ -268,8 +268,9 @@ const QueryPart = memo(({ P }: { P?: boolean }) => {
     </div>
 });
 
-const TimePart = memo(({ timeData }: { timeData: TimeDataResponse | null }) => {
+const TimePart = memo(({ timeData, isSmallScreen }: { timeData: TimeDataResponse | null, isSmallScreen: boolean }) => {
     const [xData, yData, yPrData] = useMemo(() => utcDayToLineData(timeData), [timeData]);
+    const monthlyData = useMemo(() => (timeData ? fillDataWithSpecialDays(timeData!.monthly) : undefined), [timeData]);
 
     const xFormatter = useCallback((value: number, ctx: AxisValueFormatterContext) => {
         const date = new Date(value);
@@ -279,14 +280,45 @@ const TimePart = memo(({ timeData }: { timeData: TimeDataResponse | null }) => {
             return date.getUTCFullYear() + "-" + (date.getUTCMonth() + 1) + "-" + date.getUTCDate();
         }
     }, []);
+
+    const xFormatterSecMonth = useCallback((value: number, ctx: AxisValueFormatterContext) => {
+        const date = new Date(value * 1000);
+        return date.getUTCFullYear() + "-" + (date.getUTCMonth() + 1);
+    }, []);
+
+    const xInterval = useCallback((value: number, index: number) => {
+        const date = new Date(value);
+        const month = date.getUTCMonth();
+        return (month === 0 || month === 6) && date.getUTCDate() === 1;
+    }, []);
+
+    const xIntervalSec = useCallback((value: number, index: number) => {
+        const date = new Date(value * 1000);
+        const month = date.getUTCMonth();
+        return (month === 0 || month === 6) && date.getUTCDate() === 1;
+    }, []);
+
+    const percentFormatter = useCallback((value: number | null, ctx: AxisValueFormatterContext | SeriesValueFormatterContext) => {
+        return value == null ? "" : (ctx && (ctx as AxisValueFormatterContext).location === "tick") ? (String(value).substring(0, 4) + "%") : (value.toFixed(3) + "%");
+    }, []);
+
     return (<Box>
         <br />
-        {timeData ? (
+        {timeData ? (<>
+            <Typography variant="h6" component="p">
+                Subdomains & PRs
+            </Typography>
             <LineChart
                 xAxis={[{
-                    scaleType: "linear",
+                    scaleType: "point",
                     data: xData,
                     valueFormatter: xFormatter,
+                    tickInterval: xInterval,
+                    tickLabelStyle: {
+                        angle: -90,
+                        textAnchor: "end",
+                        dominantBaseline: "central",
+                    },
                 }]}
                 series={[
                     {
@@ -306,14 +338,86 @@ const TimePart = memo(({ timeData }: { timeData: TimeDataResponse | null }) => {
                         curve: "linear",
                     },
                 ]}
-                height={400}
+                height={isSmallScreen ? 250 : 400}
                 disableLineItemHighlight
                 skipAnimation />
-        ) : undefined}
+        </>) : undefined}
+        <br />
+        {monthlyData ? (<>
+            <Typography variant="h6" component="p">
+                Monthly stats
+            </Typography>
+            <LineChart
+                leftAxis="countAxis"
+                rightAxis="percentAxis"
+                xAxis={[{
+                    scaleType: "point",
+                    data: monthlyData.xMonth,
+                    valueFormatter: xFormatterSecMonth,
+                    tickInterval: xIntervalSec,
+                    tickLabelStyle: {
+                        angle: -90,
+                        textAnchor: "end",
+                        dominantBaseline: "central",
+                    },
+                }]}
+                yAxis={[
+                    { id: "countAxis", scaleType: "linear" },
+                    { id: "percentAxis", scaleType: "linear", min: 0, max: 100, valueFormatter: percentFormatter },
+                ]}
+                series={[
+                    {
+                        id: "prCreate",
+                        label: "Monthly PR Created",
+                        type: "line",
+                        data: monthlyData.prMonthTotal,
+                        disableHighlight: true,
+                        showMark: false,
+                        curve: "linear",
+                        color: "#FF9800",
+                        yAxisId: "countAxis",
+                    },
+                    {
+                        id: "subdomainAdd",
+                        label: "Monthly Subdomain Added",
+                        type: "line",
+                        data: monthlyData.subdomainMonth,
+                        disableHighlight: true,
+                        showMark: false,
+                        curve: "linear",
+                        color: "#009688",
+                        yAxisId: "countAxis",
+                    },
+                    {
+                        id: "mergeRate",
+                        label: "Monthly PR Merge Rate (%)",
+                        type: "line",
+                        data: monthlyData.prMonthMergeRate,
+                        disableHighlight: true,
+                        showMark: false,
+                        curve: "linear",
+                        color: "#2196F3",
+                        yAxisId: "percentAxis",
+                        valueFormatter: percentFormatter,
+                    },
+                ]}
+                sx={{
+                    "& .MuiLineElement-root": {
+                        strokeWidth: 1,
+                    },
+                    "& .MuiLineElement-root.MuiLineElement-series-mergeRate": {
+                        strokeDasharray: "2 2",
+                    },
+                }}
+                height={isSmallScreen ? 250 : 400}
+                disableLineItemHighlight
+                skipAnimation />
+        </>) : undefined}
     </Box>);
 });
 
 const StatPart = memo(({ P }: { P?: boolean }) => {
+    const isSmallScreen = useMediaQuery("(max-width: 768px)");
     const [timeData, setTimeData] = useState<TimeDataResponse | null>(null);
     const [loadingYear, setLoadingYear] = useState(true);
     const [queryResultYear, setQueryResultYear] = useState<QueryYearResult | null>(null);
@@ -576,14 +680,14 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
                 <Typography variant="h6" component="p">
                     <b>Data Update Time:</b> <InlinePre>{new Date(queryResultYear.result.updateTime * 1000).toISOString()}</InlinePre>
                 </Typography>
-                <TimePart timeData={timeData} />
+                <TimePart timeData={timeData} isSmallScreen={isSmallScreen} />
                 <Typography variant="h6" component="p">
                     Click a year below to show monthly stats
                 </Typography>
                 <BarChart
                     xAxis={yearXAxis!}
                     series={yearSeries!}
-                    height={400}
+                    height={isSmallScreen ? 250 : 400}
                     onItemClick={onYearClick}
                     onAxisClick={onYearClick} />
             </Box>
@@ -622,7 +726,7 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
                 <BarChart
                     xAxis={monthXAxis!}
                     series={monthSeries!}
-                    height={400}
+                    height={isSmallScreen ? 250 : 400}
                     onItemClick={onMonthClick}
                     onAxisClick={onMonthClick} />
             </Box>
@@ -661,7 +765,7 @@ const StatPart = memo(({ P }: { P?: boolean }) => {
                 <BarChart
                     xAxis={dayXAxis!}
                     series={daySeries!}
-                    height={400}
+                    height={isSmallScreen ? 250 : 400}
                     onItemClick={onDayClick}
                     onAxisClick={onDayClick} />
             </Box>
